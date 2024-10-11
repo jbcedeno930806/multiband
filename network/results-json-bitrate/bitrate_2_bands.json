@@ -1,0 +1,212 @@
+{
+    "10": {
+        "BPSK": {
+            "C": {
+                "slots": 1,
+                "reach": 19700
+            },
+            "L": {
+                "slots": 1,
+                "reach": 16700
+            }
+        },
+        "QPSK": {
+            "C": {
+                "slots": 1,
+                "reach": 9900
+            },
+            "L": {
+                "slots": 1,
+                "reach": 8400
+            }
+        },
+        "8-QAM": {
+            "C": {
+                "slots": 1,
+                "reach": 5400
+            },
+            "L": {
+                "slots": 1,
+                "reach": 4600
+            }
+        },
+        "16-QAM": {
+            "C": {
+                "slots": 1,
+                "reach": 1400
+            },
+            "L": {
+                "slots": 1,
+                "reach": 2200
+            }
+        }
+    },
+    "40": {
+        "BPSK": {
+            "C": {
+                "slots": 1,
+                "reach": 19700
+            },
+            "L": {
+                "slots": 2,
+                "reach": 16700
+            }
+        },
+        "QPSK": {
+            "C": {
+                "slots": 1,
+                "reach": 9900
+            },
+            "L": {
+                "slots": 1,
+                "reach": 8400
+            }
+        },
+        "8-QAM": {
+            "C": {
+                "slots": 1,
+                "reach": 5400
+            },
+            "L": {
+                "slots": 1,
+                "reach": 4600
+            }
+        },
+        "16-QAM": {
+            "C": {
+                "slots": 1,
+                "reach": 1400
+            },
+            "L": {
+                "slots": 1,
+                "reach": 2200
+            }
+        }
+    },
+    "100": {
+        "BPSK": {
+            "C": {
+                "slots": 1,
+                "reach": 19700
+            },
+            "L": {
+                "slots": 1,
+                "reach": 16700
+            }
+        },
+        "QPSK": {
+            "C": {
+                "slots": 1,
+                "reach": 9900
+            },
+            "L": {
+                "slots": 1,
+                "reach": 8400
+            }
+        },
+        "8-QAM": {
+            "C": {
+                "slots": 1,
+                "reach": 5400
+            },
+            "L": {
+                "slots": 1,
+                "reach": 4600
+            }
+        },
+        "16-QAM": {
+            "C": {
+                "slots": 1,
+                "reach": 1400
+            },
+            "L": {
+                "slots": 1,
+                "reach": 2200
+            }
+        }
+    },
+    "400": {
+        "BPSK": {
+            "C": {
+                "slots": 1,
+                "reach": 19700
+            },
+            "L": {
+                "slots": 1,
+                "reach": 16700
+            }
+        },
+        "QPSK": {
+            "C": {
+                "slots": 1,
+                "reach": 9900
+            },
+            "L": {
+                "slots": 1,
+                "reach": 8400
+            }
+        },
+        "8-QAM": {
+            "C": {
+                "slots": 1,
+                "reach": 5400
+            },
+            "L": {
+                "slots": 1,
+                "reach": 4600
+            }
+        },
+        "16-QAM": {
+            "C": {
+                "slots": 1,
+                "reach": 1400
+            },
+            "L": {
+                "slots": 1,
+                "reach": 2200
+            }
+        }
+    },
+    "1000": {
+        "BPSK": {
+            "C": {
+                "slots": 1,
+                "reach": 19700
+            },
+            "L": {
+                "slots": 1,
+                "reach": 16700
+            }
+        },
+        "QPSK": {
+            "C": {
+                "slots": 1,
+                "reach": 9900
+            },
+            "L": {
+                "slots": 1,
+                "reach": 8400
+            }
+        },
+        "8-QAM": {
+            "C": {
+                "slots": 1,
+                "reach": 5400
+            },
+            "L": {
+                "slots": 1,
+                "reach": 4600
+            }
+        },
+        "16-QAM": {
+            "C": {
+                "slots": 1,
+                "reach": 1400
+            },
+            "L": {
+                "slots": 1,
+                "reach": 2200
+            }
+        }
+    }
+}
