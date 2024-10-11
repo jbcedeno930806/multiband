@@ -1,0 +1,102 @@
+{
+    "$schema": "https://json-schema.org/draft/2019-09/schema",
+    "$id": "http://example.com/example.json",
+    "type": "object",
+    "default": {},
+    "title": "Root Schema",
+    "required": [
+        "alias",
+        "Name",
+        "nodes",
+        "links"
+    ],
+    "properties": {
+        "alias": {
+            "type": "string",
+            "default": "",
+            "title": "The alias Schema"
+        },
+        "Name": {
+            "type": "string",
+            "default": "",
+            "title": "The Name Schema"
+        },
+        "nodes": {
+            "type": "array",
+            "default": [],
+            "title": "The nodes Schema",
+            "items": {
+                "type": "object",
+                "title": "A Schema",
+                "required": [
+                    "id"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "The id Schema"
+                    }
+                }            
+            }
+        },
+        "links": {
+            "type": "array",
+            "default": [],
+            "title": "The links Schema",
+            "items": {
+                "type": "object",
+                "title": "A Schema",
+                "required": [
+                    "dst",
+                    "id",
+                    "length",
+                    "slots",
+                    "src"
+                ],
+                "properties": {
+                    "dst": {
+                        "type": "integer",
+                        "title": "The dst Schema"
+                    },
+                    "id": {
+                        "type": "integer",
+                        "title": "The id Schema"
+                    },
+                    "length": {
+                        "type": "integer",
+                        "title": "The length Schema"
+                    },
+                    "slots": {
+                        "type": "object",
+                        "title": "The slots Schema",
+                        "required": [
+                            "C"
+                        ],
+                        "properties": {
+                            "C": {
+                                "type": "integer",
+                                "title": "The C Schema"
+                            },
+                            "L": {
+                                "type": "integer",
+                                "title": "The L Schema"
+                            },
+                            "S": {
+                                "type": "integer",
+                                "title": "The S Schema"
+                            },
+                            "E": {
+                                "type": "integer",
+                                "title": "The E Schema"
+                            }
+                        }
+                    },
+                    "src": {
+                        "type": "integer",
+                        "title": "The src Schema"
+                    }
+                }
+            }
+        }
+    }
+}
