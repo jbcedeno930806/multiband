@@ -14,6 +14,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "numpy",
+        "pandas",
         "pip == 24.0",
         "setuptools==65.5.0",
         "jsonschema",
