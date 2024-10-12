@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jan 24 14:37:03 2022
-
-@author: redno
-"""
-
 from typing import Union, Dict, List
 
 

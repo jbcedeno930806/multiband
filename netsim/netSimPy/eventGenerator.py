@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Apr 25 15:40:47 2022
-
-@author: redno
-"""
 from typing import List, TypedDict
 from .event import Event, EventType
 from .expVariable import ExpVariable

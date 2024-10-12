@@ -3,7 +3,6 @@ from .netSimPy.network import AllocationResult
 from .utils import get_available_blocks
 from typing import List
 import numpy as np
-from .gym_basic.envs import RMSA_ENV
 
 
 def sap_ff(n_paths=3):
@@ -38,7 +37,7 @@ def sap_ff(n_paths=3):
     return sap_ff_func
 
 
-def heuristic_sap_ff(env: RMSA_ENV):
+def heuristic_sap_ff(env: "RMSA_ENV"):
     def func(observations: np.ndarray) -> np.ndarray:
         actions = []
         n_paths = env.n_paths

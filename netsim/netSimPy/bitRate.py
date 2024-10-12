@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Feb 22 16:08:34 2022
-@author: redno
-"""
-
 import json
 from typing import List
 from .link import Link

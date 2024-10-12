@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue May 17 13:32:05 2022
-
-@author: redno
-"""
 from numpy.random import Generator, MT19937
-import numpy as np
 
 
 class RandomVariable:
@@ -19,29 +13,26 @@ class RandomVariable:
         self.__dist = generator.uniform(0, 1.0)
         return self.__dist
 
-    ''' '''
     @property
     def generator(self):
         return self.__generator
-    
+
     @generator.setter
-    def bitRate(self,seed):
+    def bitRate(self, seed):
         self.__generator = Generator(MT19937(seed))
 
-    ''' '''
     @property
     def parameter1(self):
         return self.__parameter1
-    
+
     @parameter1.setter
-    def parameter1(self,paramenter):
+    def parameter1(self, paramenter):
         self.__parameter1 = paramenter
 
-    ''' '''
     @property
     def dist(self):
         return self.__dist
-    
+
     @dist.setter
-    def dist(self,generator):
-        self.__dist = generator.uniform(0, 1.0)    
+    def dist(self, generator):
+        self.__dist = generator.uniform(0, 1.0)
