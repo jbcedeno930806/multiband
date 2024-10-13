@@ -1,6 +1,6 @@
 {
-    "alias": "RMSA_NSFNet",
-    "name": "RMSA_NSFNet",
+    "alias": "ShortestPath",
+    "name": "NSFNet_routes",
     "routes": [
         {
             "src": 0,

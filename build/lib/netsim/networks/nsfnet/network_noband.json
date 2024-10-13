@@ -1,6 +1,6 @@
 {
-    "alias": "RMSA_NSFNet",
-    "Name": "RMSA_NSFNet",
+    "alias": "NSFNet_noband",
+    "Name": "NSFNet",
     "nodes": [
         {
             "id": 0

@@ -1,14 +1,8 @@
 # -*- coding: utf-8 -*-
 from numpy.random import Generator, MT19937, SeedSequence
 
-# from .randomVariable import RandomVariable
-
 
 class UniformVariable:
-    # __generator = None
-    # __parameter = None
-    # _dist = None
-
     def __init__(self, seed, parameter):
         if parameter < 0:
             raise ("Parameter 1  must be positive.")

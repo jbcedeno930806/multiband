@@ -40,6 +40,7 @@ class Reader:
 
         return schema
 
+    @staticmethod
     def validateJson(self, jsonData):
         try:
             localSchema = self.load_schema()
@@ -48,7 +49,7 @@ class Reader:
             return False
         return True
 
-    def readNetwork(self, file)->Tuple[Dict[str, Node], Dict[str, Link]]:
+    def readNetwork(self, file) -> Tuple[Dict[str, Node], Dict[str, Link]]:
         nodes = {}
         links = {}
         with open(file) as json_file:
@@ -60,12 +61,9 @@ class Reader:
                     nodeID = readNode["id"]
                     nodes[nodeID] = Node(nodeID)
                 for readLink in info["links"]:
-                    src = readLink["src"]
-                    dst = readLink["dst"]
-                    link = Link(
-                        f"{src}-{dst}", readLink["length"], slots=readLink["slots"]
-                    )
-                    link.src = src
-                    link.dst = dst
+                    src = readLink["src"], dst = readLink["dst"]
+                    slots = readLink["slots"]
+                    length = readLink["length"]
+                    link = Link(src, dst, length, slots)
                     links[link.id] = link
         return nodes, links

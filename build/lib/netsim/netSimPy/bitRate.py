@@ -65,7 +65,8 @@ class BitRate:
             )
         return self.__reach[position]
 
-    def readBitRateFile(self, fileName: str):
+    @staticmethod
+    def readBitRateFile(fileName: str):
         with open(fileName) as json_file:
             info = json.load(json_file)
             bitsRate: list[BitRate] = []
@@ -81,8 +82,6 @@ class BitRate:
                 bitsRate.append(bitRate)
             return bitsRate
 
-    """ """
-
     @property
     def bitRate(self):
         return self.__bitRate
@@ -90,8 +89,6 @@ class BitRate:
     @bitRate.setter
     def bitRate(self, bitRate):
         self.__bitRate = bitRate
-
-    """ """
 
     @property
     def modulation(self):
@@ -101,8 +98,6 @@ class BitRate:
     def modulation(self, modulation):
         self.__modulation.append(modulation)
 
-    """ """
-
     @property
     def slots(self):
         return self.__slots
@@ -110,8 +105,6 @@ class BitRate:
     @slots.setter
     def slots(self, slots):
         self.__slots.append(slots)
-
-    """ """
 
     @property
     def reach(self):
