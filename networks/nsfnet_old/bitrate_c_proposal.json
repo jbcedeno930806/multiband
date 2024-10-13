@@ -1,0 +1,58 @@
+{
+    "10": {
+        "C": {
+            "BPSK":{
+                "slots": 1,
+                "reach": 10000
+            },
+            "QPSK":{
+                "slots": 1,
+                "reach": 2720
+            },
+            "8-QAM":{
+                "slots": 1,
+                "reach": 1360
+            },
+            "16-QAM":{
+                "slots": 1,
+                "reach": 560
+            },
+            "32-QAM":{
+                "slots": 1,
+                "reach": 240
+            },
+            "64-QAM":{
+                "slots": 1,
+                "reach": 80
+            }
+        }
+    },
+    "40": {
+        "C": {
+            "BPSK":{
+                "slots": 2,
+                "reach": 10000
+            },
+            "QPSK":{
+                "slots": 2,
+                "reach": 2720
+            },
+            "8-QAM":{
+                "slots": 2,
+                "reach": 1360
+            },
+            "16-QAM":{
+                "slots": 2,
+                "reach": 560
+            },
+            "32-QAM":{
+                "slots": 2,
+                "reach": 240
+            },
+            "64-QAM":{
+                "slots": 2,
+                "reach": 80
+            }
+        }
+    }
+}

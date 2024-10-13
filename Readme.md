@@ -1,5 +1,5 @@
 **Requerimientos**
-Python 3.9.6
+Python 3.12.3
 
 **Instalación**
 ***1 - Creación y activación del environment***

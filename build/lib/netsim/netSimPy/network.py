@@ -1,6 +1,6 @@
 from .filemanager.readerJson import Reader
 import json
-from typing import Union, Dict, List, Callable, Tuple, TypedDict
+from typing import Dict, List, Callable, Tuple, TypedDict
 import sys
 from .link import Link
 from .connection import Connection
@@ -9,6 +9,7 @@ from .uniformVariable import UniformVariable
 from .event import Event
 from .bitRate import BitRate
 from uuid import UUID
+from .node import Node
 
 sys.path.append("../")
 
@@ -27,7 +28,6 @@ class NetworkProps(TypedDict):
         [Event, Connection, list[List[List[List[Link]]]], "Network"],
         Tuple[AllocationResult, Connection],
     ]
-    slots: Union[int, Dict]
     seed: int
 
 
@@ -37,66 +37,66 @@ class Network:
         networkFileName: str,
         pathsFileName: str,
         bitrateFilename: str = "",
-        slots: Union[int, Dict] = {
-            "NoBand": 344,
-            "C": 344,
-            "L": 480,
-            "S": 760,
-            "E": 1136,
-        },
         seed: int = 12345,
     ):
         self.__seed = seed
-        self.__nodes, self.__links = Network.readNetwork(networkFileName)
-        self.__paths = self.readPathFile(pathsFileName)
-        self.__bitRates = BitRate().readBitRateFile(bitrateFilename)
-        self.__slots = slots
-        self.restart()
+        self.__nodes, self.__links, self.__bands_info = Network.readNetwork(
+            networkFileName
+        )
+        self.__paths = Network.readPathFile(pathsFileName)
+        self.__bitRates = BitRate.readBitRateFile(bitrateFilename)
+        self._restart()
 
-    def restart(self):
+    def _restart(self):
         self.__srcVariable = UniformVariable(self.__seed, self.getNodesCount())
-        self.__dstVariable = UniformVariable(self.__seed, self.getNodesCount())
+        self.__dstVariable = UniformVariable(self.__seed - 1, self.getNodesCount())
         self.__bitRateVariable = UniformVariable(self.__seed, len(self.__bitRates))
         self.__connections: Dict[int, Connection] = {}
+
+    def restart(self):
         self.resetLinks()
+        self._restart()
 
     @staticmethod
-    def readNetwork(filename):
-        # Open JSON File
-        j = Reader()
-        return j.readNetwork(filename)
+    def readNetwork(filename) -> Tuple[Dict[str, Node], Dict[str, Link], Dict[str, int]]:
+        nodes = {}
+        links = {}
+        bands_info = {}
+        with open(filename) as file:
+            info = json.load(file)
+            if Reader.validateJson(info):
+                for readNode in info["nodes"]:
+                    nodeID = readNode["id"]
+                    nodes[nodeID] = Node(nodeID)
+                bands_info: dict = info["bands_info"]
+                for readLink in info["links"]:
+                    id = readLink["id"]
+                    src = readLink["src"]
+                    dst = readLink["dst"]
+                    # slots = readLink["slots"]
+                    length = readLink["length"]
+                    link = Link(id, src, dst, length, bands_info)
+                    links[link.id] = link
+            else:
+                raise ("Invalid JSON file")
+        return nodes, links, bands_info
 
     def resetLinks(self):
         for link in self.__links.values():
-            link.reset(self.__slots)
+            link.reset()
 
-    def readPathFile(self, pathFileName) -> list[List[List[List[str]]]]:
-        with open(pathFileName) as json_file:
-            filePaths = json.load(json_file)
-        numberOfNodes = len(self.__nodes)
-        paths: List[List[List[List[Link]]]] = []
-        # initializing paths as paths[src][dst]
-        for i in range(0, numberOfNodes):
-            paths.append([])
-            for j in range(0, numberOfNodes):
-                paths[i].append([])
-
-        routesNumber = len(filePaths["routes"])
-        for i in range(0, routesNumber):
-            src: int = filePaths["routes"][i]["src"]
-            dst: int = filePaths["routes"][i]["dst"]
-            pathsCount = len(filePaths["routes"][i]["paths"])
-
-            for j in range(0, pathsCount):
-                paths[src][dst].append([])
-            for j in range(0, pathsCount):
-                nodesPathNumber = len(filePaths["routes"][i]["paths"][j])
-                lastNode = nodesPathNumber - 1
-                for k in range(0, lastNode):
-                    actNode = filePaths["routes"][i]["paths"][j][k]
-                    nextNode = filePaths["routes"][i]["paths"][j][k + 1]
-                    paths[src][dst][j].append(f"{actNode}-{nextNode}")
-
+    # TODO: Mejorar este código, se puede optimizar por mucho:
+    @staticmethod
+    def readPathFile(pathFileName) -> dict[str, list]:
+        paths = {}
+        with open(pathFileName) as file:
+            filePaths = json.load(file)
+            all_routes = filePaths["routes"]
+            for r in all_routes:
+                src: str = r["src"]
+                dst: str = r["dst"]
+                routes: list = r["paths"]
+                paths[src, dst] = routes
         return paths
 
     def allocate(self, con: Connection) -> AllocationResult:
@@ -145,6 +145,12 @@ class Network:
 
     def getConnection(self, connectionID: int):
         return self.__connections[connectionID]
+
+    def getBands(self):
+        return self.__bands_info.keys()
+
+    def getSlotsOfBand(self, band: str):
+        return self.__bands_info[band]
 
     def generateConnectionRequest(self, eventID: UUID):
         src = self.__srcVariable.getNextIntValue()

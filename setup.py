@@ -15,11 +15,12 @@ setup(
     install_requires=[
         "numpy",
         "pandas",
-        "pip == 24.0",
+        "pip == 24.2",
         "setuptools==65.5.0",
         "jsonschema",
         "importlib-metadata",
         "protobuf",
+        "networkx",
         "ipykernel",
     ],
 )

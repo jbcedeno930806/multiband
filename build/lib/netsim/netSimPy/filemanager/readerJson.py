@@ -8,9 +8,6 @@ import os
 import json
 import jsonschema
 from jsonschema import validate
-from ..node import Node
-from ..link import Link
-from typing import Dict, Tuple
 
 
 class Reader:
@@ -18,7 +15,17 @@ class Reader:
         print(os.path.join(os.path.dirname(__file__), "bitRates.schema.json"))
         return os.path.join(os.path.dirname(__file__), "bitRates.schema.json")
 
-    def load_schema(self):
+    @staticmethod
+    def validateJson(jsonData):
+        try:
+            localSchema = Reader.load_schema()
+            validate(instance=jsonData, schema=localSchema)
+        except jsonschema.exceptions.ValidationError:
+            return False
+        return True
+
+    @staticmethod
+    def load_schema():
         """Load the JSON schema at the given path as a Python object.
 
         Args:
@@ -28,7 +35,7 @@ class Reader:
             A Python object representation of the schema.
 
         """
-        schema_path = os.path.join(os.path.dirname(__file__), "bitRates.schema.json")
+        schema_path = os.path.join(os.path.dirname(__file__), "network.schema.json")
         try:
             with open(schema_path) as schema_file:
                 schema = json.load(schema_file)
@@ -39,33 +46,3 @@ class Reader:
             )
 
         return schema
-
-    def validateJson(self, jsonData):
-        try:
-            localSchema = self.load_schema()
-            validate(instance=jsonData, schema=localSchema)
-        except jsonschema.exceptions.ValidationError as err:
-            return False
-        return True
-
-    def readNetwork(self, file)->Tuple[Dict[str, Node], Dict[str, Link]]:
-        nodes = {}
-        links = {}
-        with open(file) as json_file:
-            info = json.load(json_file)
-            if self.validateJson(info):
-                pass
-            else:
-                for readNode in info["nodes"]:
-                    nodeID = readNode["id"]
-                    nodes[nodeID] = Node(nodeID)
-                for readLink in info["links"]:
-                    src = readLink["src"]
-                    dst = readLink["dst"]
-                    link = Link(
-                        f"{src}-{dst}", readLink["length"], slots=readLink["slots"]
-                    )
-                    link.src = src
-                    link.dst = dst
-                    links[link.id] = link
-        return nodes, links

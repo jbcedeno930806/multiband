@@ -9,7 +9,7 @@ from typing import List, Optional
 #######################################################
 
 
-def get_shared_link(path: List[Link]):
+def get_shared_link(path: List[Link], band: str):
     """Returns an array that represents the usage of the whole path
     Args:
         path (List[str]): _description_
@@ -17,11 +17,11 @@ def get_shared_link(path: List[Link]):
     Returns:
         _type_: _description_
     """
-    shared_link = [False] * min([link.getSlotsCount() for link in path])
+    shared_link = [False] * min([link.getSlotsCount(band) for link in path])
     for link in path:
         for slotIndex in range(len(shared_link)):
             shared_link[slotIndex] = shared_link[slotIndex] or link.getSlotValue(
-                slotIndex
+                slotIndex, band
             )
     return shared_link
 
@@ -43,13 +43,14 @@ def rle(inarray):
         return p, ia[i], z
 
 
-def get_available_blocks(b: BitRate, path: List[Link], max_blocks: Optional[int] = None):
+def get_available_blocks(
+    slots: int, path: List[Link], band: str, max_blocks: Optional[int] = None
+):
     # getting available slots across the whole path
     # False if slot is available across all the links
     # True if not
-    shared_link = get_shared_link(path)
+    shared_link = get_shared_link(path, band)
     # getting the number of slots necessary for this service across this path
-    slots = b.getBestModulationNumberOfSlots(path)
     # getting the blocks
     initial_indices, values, lengths = rle(shared_link)
     # selecting the indices where the block is available, i.e., equals to 0

@@ -1,122 +1,74 @@
 # -*- coding: utf-8 -*-
 import json
-from typing import List
+from typing import Dict, List, TypedDict
+import math
 from .link import Link
+
+
+class ModulationInfo(TypedDict):
+    reach: int
+    slots: int
 
 
 class BitRate:
     __bitRate = 0.0
-    __modulation = None
-    __slots = None
-    __reach = None
+    __bitrate_data = None
 
-    def __init__(self, bitRate=None):
+    def __init__(self, bitRate: int, bitrate_data: Dict[str, Dict[str, ModulationInfo]]):
         self.__bitRate = bitRate
-        self.__modulation = []
-        self.__slots = []
-        self.__reach = []
+        self.__bitrate_data = bitrate_data
 
-    def addModulation(self, modulation, slots, reach):
-        self.__modulation.append(modulation)
-        self.__slots.append(slots)
-        self.__reach.append(reach)
-
-    def getModulation(self, position):
-        if position >= len(self.__modulation):
-            raise (
-                "Bitrate "
-                + self.__bitRate
-                + " does not have more than "
-                + len(self.__modulation)
-                + " modulations."
-            )
-        return self.__modulation[position]
-
-    def getNumberofSlots(self, position):
-        if position >= len(self.__slots):
-            raise (
-                "Bitrate "
-                + self.__bitRate
-                + " does not have more than "
-                + len(self.__slots)
-                + " slots."
-            )
-        return self.__slots[position]
-
-    def getBestModulationNumberOfSlots(self, route: List[Link]):
+    def getAvailableModulationsByBand(
+        self, route: List[Link], band: str
+    ) -> Dict[str, ModulationInfo]:
         distance = sum([link.length for link in route])
-        separation = 999999
-        demand = 80
-        for idm, _ in enumerate(self.modulation):
-            sep = self.reach[idm] - distance
-            if sep >= 0 and sep <= separation:
-                separation = sep
-                demand = self.slots[idm]
-        return demand
+        available_modulations = {}
+        for modulation in self.__bitrate_data[band]:
+            if self.__bitrate_data[band][modulation]["reach"] >= distance:
+                available_modulations[modulation] = self.__bitrate_data[band][modulation]
+        return available_modulations
 
-    def getReach(self, position):
-        if position >= len(self.__reach):
-            raise (
-                "Bitrate "
-                + self.__bitRate
-                + " does not have more than "
-                + len(self.__reach)
-                + " reach."
-            )
-        return self.__reach[position]
+    def getAvailableModulations(self, route: List[Link]):
+        available_modulations = {}
+        for band in self.__bitrate_data:
+            byBand = self.getAvailableModulationsByBand(route, band)
+            available_modulations[band] = byBand
+        return available_modulations
 
-    def readBitRateFile(self, fileName: str):
+    def getBestModulationByBand(self, route: List[Link], band: str):
+        route_length = sum([link.length for link in route])
+        available_modulations = self.getAvailableModulationsByBand(route, band)
+        best_modulation = None
+        best_diff = math.inf
+        for modulation in available_modulations.values():
+            diff = modulation["reach"] - route_length
+            if diff >= 0 and diff <= best_diff:
+                best_modulation = modulation
+                best_diff = diff
+        print("best_modulation:", best_modulation)
+        return best_modulation
+
+    @staticmethod
+    def readBitRateFile(fileName: str):
         with open(fileName) as json_file:
             info = json.load(json_file)
             bitsRate: list[BitRate] = []
             for bitRateTag in info:
-                bitRate = BitRate(bitRateTag)
-                for modulation in info[bitRateTag]:
-                    for band in info[bitRateTag][modulation]:
-                        bitRate.addModulation(
-                            modulation,
-                            info[bitRateTag][modulation][band]["slots"],
-                            info[bitRateTag][modulation][band]["reach"],
-                        )
+                bitRate = BitRate(bitRateTag, info[bitRateTag])
                 bitsRate.append(bitRate)
             return bitsRate
 
-    """ """
-
-    @property
-    def bitRate(self):
+    def getBitRate(self):
         return self.__bitRate
 
-    @bitRate.setter
-    def bitRate(self, bitRate):
-        self.__bitRate = bitRate
+    def getReach(self, band, modulation):
+        return self.__bitrate_data[band][modulation]["reach"]
 
-    """ """
+    def getSlots(self, band, modulation):
+        return self.__bitrate_data[band][modulation]["slots"]
 
-    @property
-    def modulation(self):
-        return self.__modulation
+    def getModulation(self, band: str):
+        return self.__bitrate_data[band]
 
-    @modulation.setter
-    def modulation(self, modulation):
-        self.__modulation.append(modulation)
-
-    """ """
-
-    @property
-    def slots(self):
-        return self.__slots
-
-    @slots.setter
-    def slots(self, slots):
-        self.__slots.append(slots)
-
-    """ """
-
-    @property
-    def reach(self):
-        return self.__reach
-
-    @reach.setter
-    def reach(self, reach):
-        self.__reach.append(reach)
+    def __str__(self):
+        return f"BitRate:{self.__bitRate}\nData:\t{self.__bitrate_data}"
