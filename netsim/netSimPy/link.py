@@ -8,11 +8,11 @@ class Link:
 
     def __init__(
         self,
-        id: int,
+        id: str,
         src: int = -1,
         dst: int = -1,
         length=1,
-        slots: Union[int, Dict] = 100,
+        slots: Union[int, Dict[str, list]] = 100,
     ):
         self.__id = id
         self.__src = src
@@ -20,7 +20,7 @@ class Link:
         self.__length = length
 
         # Slots by band:
-        self.__slots = {}
+        self.__slots:Dict[str, list] = {}
         if isinstance(slots, int):
             self.__slots[self.__bandSelected] = [False] * slots
         else:
@@ -63,7 +63,11 @@ class Link:
 
     def getSlots(self, band=None):
         return self.__slots[self.__bandSelected if band is None else band]
-
+    
+    def getAvailibility(self, band=None):
+        available = self.__slots[self.__bandSelected if band is None else band]
+        return available.count(False)
+    
     @property
     def id(self):
         return self.__id

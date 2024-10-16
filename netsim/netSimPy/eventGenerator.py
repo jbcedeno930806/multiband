@@ -17,35 +17,29 @@ class EventsGenerator:
         mLambda=10000,
         mu=100,
     ):
-        self.__clock = 0
         self.__seed = seed
         self.__lambda = mLambda
         self.__mu = mu
+        self.__arriveVariable = ExpVariable(self.__seed, self.__lambda)
+        self.__departVariable = ExpVariable(self.__seed, self.__mu)
         self.restart()
 
     def restart(self):
+        self.__clock = 0
         self.__events: List[Event] = []
-        self.__arriveVariable = ExpVariable(self.__seed, self.__lambda)
-        self.__departVariable = ExpVariable(self.__seed, self.__mu)
         startTime = self.__clock + self._getNextArrivalValue()
-        endTime = startTime + self._getNextDepartValue()
-        self.appendEvent(self.createEvent(startTime, endTime))
-        startTime += self._getNextArrivalValue()
         endTime = startTime + self._getNextDepartValue()
         self.appendEvent(self.createEvent(startTime, endTime))
 
     def getNextEvent(self) -> Event:
-        self.__events.pop(0)
-        event = self.__events[0]
+        event = self.__events.pop(0)
         self.__clock = event.time
         if event.getType() == EventType.Arrive:
             startTime = self.__clock + self._getNextArrivalValue()
             endTime = startTime + self._getNextDepartValue()
-            self.appendEvent(self.createEvent(startTime, endTime))
+            newEvent = self.createEvent(startTime, endTime)
+            self.appendEvent(newEvent)
         return event
-
-    def getCurrentEvent(self):
-        return self.__events[0]
 
     @staticmethod
     def createEvent(startTime: float, endTime: float) -> Event:
@@ -79,6 +73,7 @@ class EventsGenerator:
     @mu.setter
     def mu(self, mu: float):
         self.__mu = mu
+        self.__departVariable = ExpVariable(self.__seed, self.__mu)
 
     @property
     def mlabmda(self):

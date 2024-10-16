@@ -1,2 +1,6 @@
 .multiband-env
 multibandsim.egg-info
+build/*
+examples/nsfnet/tb/*
+examples/nsfnet/tmp/*
+.venv
