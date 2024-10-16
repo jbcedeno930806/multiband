@@ -70,12 +70,12 @@ class Network:
                     nodes[nodeID] = Node(nodeID)
                 bands_info: dict = info["bands_info"]
                 for readLink in info["links"]:
-                    id = readLink["id"]
+                    # id = readLink["id"]
                     src = readLink["src"]
                     dst = readLink["dst"]
                     # slots = readLink["slots"]
                     length = readLink["length"]
-                    link = Link(id, src, dst, length, bands_info)
+                    link = Link(f"{src}-{dst}", src, dst, length, bands_info)
                     links[link.id] = link
             else:
                 raise ("Invalid JSON file")
@@ -85,16 +85,15 @@ class Network:
         for link in self.__links.values():
             link.reset()
 
-    # TODO: Mejorar este código, se puede optimizar por mucho:
     @staticmethod
-    def readPathFile(pathFileName) -> dict[str, list]:
+    def readPathFile(pathFileName) -> dict[int, list]:
         paths = {}
         with open(pathFileName) as file:
             filePaths = json.load(file)
             all_routes = filePaths["routes"]
             for r in all_routes:
-                src: str = r["src"]
-                dst: str = r["dst"]
+                src: int = r["src"]
+                dst: int = r["dst"]
                 routes: list = r["paths"]
                 paths[src, dst] = routes
         return paths
@@ -143,8 +142,16 @@ class Network:
     def getNodesCount(self) -> int:
         return len(self.__nodes.keys())
 
+    def getAllConnections(self):
+        return self.__connections
+
     def getConnection(self, connectionID: int):
-        return self.__connections[connectionID]
+        if connectionID in self.__connections:
+            return self.__connections[connectionID]
+        else:
+            raise KeyError(
+                f"ConnectionID: {connectionID} not found in the list of connections"
+            )
 
     def getBands(self):
         return self.__bands_info.keys()
@@ -160,7 +167,6 @@ class Network:
         requestBitRate = self.__bitRateVariable.getNextIntValue()
         bitRate = self.bitRates[requestBitRate]
         con = Connection(eventID, src, dst, bitRate)
-        self.addConnection(con)
         return con
 
     def _computeTransmitionNodes(self):

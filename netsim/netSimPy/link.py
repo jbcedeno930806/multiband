@@ -8,7 +8,7 @@ class Link:
 
     def __init__(
         self,
-        id: int,
+        id: str,
         src: int = -1,
         dst: int = -1,
         length=1,

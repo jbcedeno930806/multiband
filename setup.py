@@ -18,6 +18,7 @@ setup(
         "pip == 24.2",
         "setuptools==65.5.0",
         "jsonschema",
+        "matplotlib",
         "importlib-metadata",
         "protobuf",
         "networkx",

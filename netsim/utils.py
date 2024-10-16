@@ -1,6 +1,5 @@
 import numpy as np
-import pandas as pd
-from .netSimPy import BitRate, Link
+from .netSimPy import Link
 from typing import List, Optional
 
 
@@ -30,7 +29,7 @@ def rle(inarray):
     """run length encoding. Partial credit to R rle function.
     Multi datatype arrays catered for including non Numpy
     returns: tuple (runlengths, startpositions, values)"""
-    # from: https://stackoverflow.com/questions/1066758/find-length-of-sequences-of-identical-values-in-a-numpy-array-run-length-encodi
+
     ia = np.asarray(inarray)  # force numpy
     n = len(ia)
     if n == 0:

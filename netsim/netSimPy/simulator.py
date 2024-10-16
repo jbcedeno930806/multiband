@@ -37,7 +37,6 @@ class Simulator:
         while steps != timesteps:
             event = self.runToNextArrivalEvent()
             connection = self.__network.generateConnectionRequest(event.id)
-            # print(connection.bitRate)
             result, con = self.allocator(connection, self.__network)
             if result == AllocationResult.Allocated:
                 self.__network.allocate(con)
@@ -45,7 +44,6 @@ class Simulator:
                 self.__eventsGenerator.appendEvent(event)
             else:
                 self.blockedEvents += 1
-                self.__network.removeConnection(con)
 
             steps += 1
         print(f"Blocking probability:{round(self.blockedEvents/steps, 7)}")
@@ -82,3 +80,6 @@ class Simulator:
         ] = None,
     ):
         self.allocator = custom_allocator
+
+    def getNetwork(self):
+        return self.__network
