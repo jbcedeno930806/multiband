@@ -4,7 +4,7 @@ from typing import Union, Dict, List
 
 class Link:
     __length = 0
-    __bandSelected = "NoBand"
+    __defauldBand = "NoBand"
 
     def __init__(
         self,
@@ -22,7 +22,7 @@ class Link:
         # Slots by band:
         self.__slots:Dict[str, list] = {}
         if isinstance(slots, int):
-            self.__slots[self.__bandSelected] = [False] * slots
+            self.__slots[self.__defauldBand] = [False] * slots
         else:
             for key in slots:
                 self.__slots[key] = [False] * slots[key]
@@ -51,22 +51,49 @@ class Link:
 
     def getSlotsCount(self, band=None):
         if band is None:
-            return len(self.__slots[self.__bandSelected])
-        else:
-            return len(self.__slots[band])
+            if self.__defauldBand in self.__slots:
+                return len(self.__slots[self.__defauldBand])
+            raise KeyError("You must select a band. Available bands are {}".format(list(self.__slots.keys())))
+        return len(self.__slots[band])
 
     def getSlotValue(self, slotIndex: str, band=None) -> bool:
-        return self.__slots[self.__bandSelected if band is None else band][slotIndex]
+        if band is None:
+            if self.__defauldBand in self.__slots:
+                return self.__slots[self.__defauldBand][slotIndex]
+            raise KeyError("You must select a band. Available bands are {}".format(list(self.__slots.keys())))
+        return self.__slots[self.__defauldBand if band is None else band][slotIndex]
 
     def getInfo(self, band=None):
         pass
 
     def getSlots(self, band=None):
-        return self.__slots[self.__bandSelected if band is None else band]
+        if band is None:
+            if self.__defauldBand in self.__slots:
+                return self.__slots[self.__defauldBand]
+            raise KeyError("You must select a band. Available bands are {}".format(list(self.__slots.keys())))
+        return self.__slots[band]
     
     def getAvailibility(self, band=None):
-        available = self.__slots[self.__bandSelected if band is None else band]
+        if band is None:
+            if self.__defauldBand in self.__slots:
+                available = self.__slots[self.__defauldBand]
+            raise KeyError("You must select a band. Available bands are {}".format(list(self.__slots.keys())))
+        else:
+            available = self.__slots[band]
         return available.count(False)
+    
+    def getFragmentation(self, band=None):
+        if band is None:
+            if self.__defauldBand in self.__slots:
+                slots= self.__slots[self.__defauldBand]
+            raise KeyError("You must select a band. Available bands are {}".format(list(self.__slots.keys())))
+        else:
+            slots= self.__slots[band]
+        try:
+            last_used_slot = slots[::-1].index(True)
+            return slots[:len(slots) - last_used_slot].count(False)
+        except ValueError:
+            return len(slots)
     
     @property
     def id(self):

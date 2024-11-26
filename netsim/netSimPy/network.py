@@ -159,6 +159,9 @@ class Network:
     def getBandAvailibility(self, band):
         return sum(link.getAvailibility(band) for link in self.links.values())
     
+    def getBandFragmentation(self, band):
+        return sum(link.getFragmentation(band) for link in self.links.values())
+    
     def getCapacityOfBand(self, band: str):
         return self.__bands_info[band]
 
