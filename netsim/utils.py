@@ -1,7 +1,11 @@
 import numpy as np
 import itertools
 from .netSimPy import Link
-from typing import List, Optional
+from typing import List, Callable, Optional, Dict, Any
+import torch
+import optuna
+from optuna.pruners import MedianPruner
+from optuna.samplers import TPESampler
 
 
 #######################################################
@@ -67,6 +71,85 @@ def get_available_blocks(
         final_indices = np.intersect1d(available_indices, sufficient_indices)
 
     return initial_indices[final_indices], lengths[final_indices]
+
+
+
+def sample_PPO_params(trial: optuna.Trial) -> Dict[str, Any]:
+    """Sampler for PPO hyperparameters."""
+    learning_rate = trial.suggest_float("learning_rate", 0.0001, 0.001, step=0.0001)
+    gamma = round(trial.suggest_float("gamma", 0.92, 0.98, step=0.01), 4)
+    n_steps = 2 ** trial.suggest_int("n_steps", 6, 9, step=1)
+    # batch_size = 2 ** trial.suggest_int("exponent_batch_size", 8, 12, True)
+    n_epochs = trial.suggest_int("n_epochs", 10, 30, step=1)
+    # max_grad_norm = trial.suggest_float("max_grad_norm", 2.4, 3.0, log=True)
+    # gae_lambda = 1.0 - trial.suggest_float("gae_lambda", 0.009, 0.03, log=True)
+    # ent_coef = trial.suggest_float("ent_coef", 0.00000001, 2.0741e-8, log=True)
+
+
+    # Display true values.
+    trial.set_user_attr("gamma", gamma)
+    trial.set_user_attr("learning_rate", learning_rate)
+    trial.set_user_attr("n_steps", n_steps)
+    # trial.set_user_attr("batch_size", batch_size)
+    trial.set_user_attr("n_epochs", n_epochs)
+    # trial.set_user_attr("max_grad_norm", max_grad_norm)
+    # trial.set_user_attr("gae_lambda_", gae_lambda)
+    # trial.set_user_attr("ent_coef", ent_coef)
+
+    return {
+        "learning_rate": learning_rate,
+        "gamma": gamma,
+        "n_steps": n_steps,
+        # "batch_size": batch_size,
+        "n_epochs": n_epochs,
+        # "gae_lambda": gae_lambda,
+        # "ent_coef": ent_coef,
+        # "max_grad_norm": max_grad_norm,
+    }
+
+
+def optimize(
+    objective: Callable,
+    n_trials=100,
+    n_startup_trials=10,
+    n_warmup_steps=0,
+    study_name="NoName",
+    **kwargs,
+):
+    torch.set_num_threads(1)
+
+    sampler = TPESampler(n_startup_trials=n_startup_trials, seed=4)
+    # Do not prune before 1/3 of the max budget is used.
+    pruner = MedianPruner(
+        n_startup_trials=n_startup_trials, n_warmup_steps=n_warmup_steps
+    )
+
+    study = optuna.create_study(
+        sampler=sampler, pruner=pruner, direction="maximize", study_name=study_name
+    )
+    try:
+        study.optimize(objective, n_trials=n_trials, **kwargs)
+    except KeyboardInterrupt:
+        pass
+
+    print("Number of finished trials: ", len(study.trials))
+
+    print("Best trial:")
+    trial = study.best_trial
+
+    print("  Value: ", trial.value)
+
+    print("  Params: ")
+    for key, value in trial.params.items():
+        print("    {}: {}".format(key, value))
+
+    print("  User attrs:")
+    for key, value in trial.user_attrs.items():
+        print("    {}: {}".format(key, value))
+
+    return study
+
+
 
 
 def pairwise(iterable):

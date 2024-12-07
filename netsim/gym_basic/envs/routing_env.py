@@ -12,7 +12,7 @@ from netsim.utils import get_shared_link, get_available_blocks, pairwise
 from typing import List, Tuple, Union, Callable
 
 
-class RMSA_ENV(gym.Env):
+class ROUTING_ENV(gym.Env):
     __shape = None
     allocation_result = None
     # metadata = None
@@ -60,6 +60,10 @@ class RMSA_ENV(gym.Env):
             2 * numberOfNodes + self.n_paths * 344 + self.n_paths * len(self.allDemands)
         )
         self.observation_space = MultiBinary(self.__shape)
+        # self.__shape = 2 * numberOfNodes + (2 * self.j + 3) * self.n_paths
+        # # self.observation_space = gym.spaces.Box(
+        # #     low=0, high=100, dtype=np.float32, shape=(self.__shape,)
+        # # )
         self.action_space_len = self.n_paths * self.j
         self.action_space = gym.spaces.Discrete(self.action_space_len)
         self.information_keywords = self.__info__
@@ -174,40 +178,62 @@ class RMSA_ENV(gym.Env):
         if mLambda is not None:
             self.__simulator.eventsGenerator.setLambda(mLambda)
 
+    def get_available_routes(
+        self,
+        c: Connection,
+        network: Network,
+    ):
+        paths = network.paths
+        band = "C"
+        a_routes = []
+        for idp, path in enumerate(paths[c.src, c.dst][:3]):
+            linksOfPath: List[Link] = [
+                network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
+            ]
+            bestModulation = c.bitRate.getBestModulationByBand(linksOfPath, band)
+            if bestModulation is None:
+                continue
+            numberOfSlots = bestModulation["slots"]
+            indexes, _ = get_available_blocks(
+                numberOfSlots,
+                linksOfPath,
+                band,
+            )
+            if len(indexes) > 0:
+                a_routes.append(idp)
+        return a_routes
+
     def _allocator(
         self,
         c: Connection,
         network: Network,
         action: int,
     ):
-        if action == self.n_paths * self.j:
+        idx_block = 0
+        paths = self.get_available_routes(c, network)
+        if len(paths) <= action or len(paths) == 0:
             return AllocationResult.Not_Allocated, c
-        else:
-            # get the route and block
-            idx_path, idx_block = self.decode_action(action)
-            paths = self.__simulator.network.paths[c.src, c.dst]
-            selected_path = paths[idx_path]
-
-            linksOfPath: List[Link] = [
-                network.links[f"{src}-{dst}"] for src, dst in pairwise(selected_path)
-            ]
-            bestModulation = c.bitRate.getBestModulationByBand(linksOfPath, "C")
-            numberOfSlots = bestModulation["slots"]
-            initial_indices, _lengths = get_available_blocks(
-                numberOfSlots,
-                linksOfPath,
-                "C",
-            )
-            if len(initial_indices) > idx_block:
-                ff_index = initial_indices[idx_block]
-                for link in linksOfPath:
-                    c.addLinkInfo(
-                        link.id,
-                        fromSlot=ff_index,
-                        toSlot=ff_index + numberOfSlots,
-                        band="C",
-                    )
-                return AllocationResult.Allocated, c
+        selected_path = network.paths[c.src, c.dst][paths[action]]
+        linksOfPath: List[Link] = [
+            network.links[f"{src}-{dst}"] for src, dst in pairwise(selected_path)
+        ]
+        bestModulation = c.bitRate.getBestModulationByBand(linksOfPath, "C")
+        numberOfSlots = bestModulation["slots"]
+        initial_indices, _lengths = get_available_blocks(
+            numberOfSlots,
+            linksOfPath,
+            "C",
+        )
+        if len(initial_indices) > idx_block:
+            ff_index = initial_indices[idx_block]
+            for link in linksOfPath:
+                c.addLinkInfo(
+                    link.id,
+                    fromSlot=ff_index,
+                    toSlot=ff_index + numberOfSlots,
+                    band="C",
+                )
+            return AllocationResult.Allocated, c
         return AllocationResult.Not_Allocated, c
 
     def setAllocatorFunc(

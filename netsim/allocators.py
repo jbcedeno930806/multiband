@@ -4,6 +4,7 @@ from .utils import get_available_blocks, get_shared_link, pairwise
 from typing import List, Union
 import enum
 
+
 def sap_ff(n_paths=3):
     def sap_ff_func(c: Connection, network: Network, action: int = 0):
         """Versión de first-fit usada en aprendizaje reforzado, donde te da los bloques
@@ -113,15 +114,16 @@ def most_available_band_all_routes(n_paths=3):
                 ]
                 bestModulation = c.bitRate.getBestModulationByBand(linksOfPath, band)
                 if bestModulation is not None:
-                    allocationInfo.append({
-                        "numberOfSlots": bestModulation["slots"],
-                        "band":band,
-                        "linksOfPath":linksOfPath,
-                        "availibility":network.getBandAvailibility(band)
-                    })
+                    allocationInfo.append(
+                        {
+                            "numberOfSlots": bestModulation["slots"],
+                            "band": band,
+                            "linksOfPath": linksOfPath,
+                            "availibility": network.getBandAvailibility(band),
+                        }
+                    )
         sortedList = sorted(
-            allocationInfo,
-            key=lambda x:(-x['availibility'], x['numberOfSlots'])
+            allocationInfo, key=lambda x: (-x["availibility"], x["numberOfSlots"])
         )
 
         for info in sortedList:
@@ -133,7 +135,7 @@ def most_available_band_all_routes(n_paths=3):
                         link.id,
                         fromSlot=index,
                         toSlot=index + info["numberOfSlots"],
-                        band=info['band'],
+                        band=info["band"],
                     )
                 return AllocationResult.Allocated, c
         return AllocationResult.Not_Allocated, c
@@ -143,6 +145,7 @@ def most_available_band_all_routes(n_paths=3):
 
 # Cambiar para priorizar primero la ruta y luego la banda, similar al alg de arriba:
 # Probar priorizar bandas basado en la banda de menor/mayor fragmentación
+
 
 def shortest_route_most_available_band(n_paths=3):
     def srmab(c: Connection, network: Network, action: int = 0):
@@ -169,17 +172,16 @@ def shortest_route_most_available_band(n_paths=3):
                 ]
                 bestModulation = c.bitRate.getBestModulationByBand(linksOfPath, band)
                 if bestModulation is not None:
-                    allocationInfo.append({
-                        "numberOfSlots": bestModulation["slots"],
-                        "band":band,
-                        "linksOfPath":linksOfPath,
-                        "availibility":network.getBandAvailibility(band),
-                        "idr":idr
-                    })
-        sortedList = sorted(
-            allocationInfo,
-            key=lambda x:(x['idr'], -x['availibility'])
-        )
+                    allocationInfo.append(
+                        {
+                            "numberOfSlots": bestModulation["slots"],
+                            "band": band,
+                            "linksOfPath": linksOfPath,
+                            "availibility": network.getBandAvailibility(band),
+                            "idr": idr,
+                        }
+                    )
+        sortedList = sorted(allocationInfo, key=lambda x: (x["idr"], -x["availibility"]))
 
         for info in sortedList:
             shared_link = get_shared_link(info["linksOfPath"], info["band"])
@@ -190,10 +192,11 @@ def shortest_route_most_available_band(n_paths=3):
                         link.id,
                         fromSlot=index,
                         toSlot=index + info["numberOfSlots"],
-                        band=info['band'],
+                        band=info["band"],
                     )
                 return AllocationResult.Allocated, c
         return AllocationResult.Not_Allocated, c
+
     return srmab
 
 
@@ -201,7 +204,10 @@ class Variant(enum.Enum):
     Least_Fragmentation = "Least_Fragmentation"
     Greater_Fragmentation = "Greater_Fragmentation"
 
-def least_fragmentation_band_prioritization(n_paths=3, variant:Variant=Variant.Greater_Fragmentation):
+
+def least_fragmentation_band_prioritization(
+    n_paths=3, variant: Variant = Variant.Greater_Fragmentation
+):
     def lfbp(c: Connection, network: Network, action: int = 0):
         """Este algoritmo prioriza la banda con menor/mayor fragmentación e intenta asignar usando todas las rutas de la más
         corta a la más larga
@@ -226,21 +232,20 @@ def least_fragmentation_band_prioritization(n_paths=3, variant:Variant=Variant.G
                 ]
                 bestModulation = c.bitRate.getBestModulationByBand(linksOfPath, band)
                 if bestModulation is not None:
-                    allocationInfo.append({
-                        "numberOfSlots": bestModulation["slots"],
-                        "band":band,
-                        "linksOfPath":linksOfPath,
-                        "fragmentation": network.getBandFragmentation(band),
-                        "idr":idr
-                    })
+                    allocationInfo.append(
+                        {
+                            "numberOfSlots": bestModulation["slots"],
+                            "band": band,
+                            "linksOfPath": linksOfPath,
+                            "fragmentation": network.getBandFragmentation(band),
+                            "idr": idr,
+                        }
+                    )
         if variant is Variant.Least_Fragmentation:
-            callback = lambda x:(x['fragmentation'], x['numberOfSlots']) 
+            callback = lambda x: (x["fragmentation"], x["numberOfSlots"])
         else:
-            callback = lambda x:(-x['fragmentation'], x['numberOfSlots']) 
-        sortedList = sorted(
-            allocationInfo,
-            key=callback
-        )
+            callback = lambda x: (-x["fragmentation"], x["numberOfSlots"])
+        sortedList = sorted(allocationInfo, key=callback)
 
         for info in sortedList:
             shared_link = get_shared_link(info["linksOfPath"], info["band"])
@@ -251,10 +256,11 @@ def least_fragmentation_band_prioritization(n_paths=3, variant:Variant=Variant.G
                         link.id,
                         fromSlot=index,
                         toSlot=index + info["numberOfSlots"],
-                        band=info['band'],
+                        band=info["band"],
                     )
                 return AllocationResult.Allocated, c
         return AllocationResult.Not_Allocated, c
+
     return lfbp
 
 

@@ -20,12 +20,12 @@ class EventsGenerator:
         self.__seed = seed
         self.__lambda = mLambda
         self.__mu = mu
-        self.__arriveVariable = ExpVariable(self.__seed, self.__lambda)
-        self.__departVariable = ExpVariable(self.__seed, self.__mu)
         self.restart()
 
     def restart(self):
         self.__clock = 0
+        self.__arriveVariable = ExpVariable(self.__seed, self.__lambda)
+        self.__departVariable = ExpVariable(self.__seed, self.__mu)
         self.__events: List[Event] = []
         startTime = self.__clock + self._getNextArrivalValue()
         endTime = startTime + self._getNextDepartValue()
