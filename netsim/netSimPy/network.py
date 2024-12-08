@@ -40,7 +40,7 @@ class Network:
         seed: int = 12345,
     ):
         self.__seed = seed
-        self.__nodes, self.__links, self.__bands_info = Network.readNetwork(
+        self.__nodes, self.__links, self.__bands_capacity = Network.readNetwork(
             networkFileName
         )
         self.__paths = Network.readPathFile(pathsFileName)
@@ -154,7 +154,10 @@ class Network:
             )
 
     def getBands(self):
-        return self.__bands_info.keys()
+        return list(self.__bands_capacity.keys())
+
+    def getCapacityOfBands(self):
+        return self.__bands_capacity
 
     def getBandAvailibility(self, band):
         return sum(link.getAvailibility(band) for link in self.links.values())
@@ -163,7 +166,7 @@ class Network:
         return sum(link.getFragmentation(band) for link in self.links.values())
 
     def getCapacityOfBand(self, band: str):
-        return self.__bands_info[band]
+        return self.__bands_capacity[band]
 
     def generateConnectionRequest(self, eventID: UUID):
         src = self.__srcVariable.getNextIntValue()

@@ -4,7 +4,6 @@ import uuid
 
 
 class EventType(enum.Enum):
-    NoData = "NoData"
     Arrive = "Arrive"
     Departure = "Departure"
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import List, Dict, TypedDict
+from typing import List, Dict, TypedDict, Union
 from .bitRate import BitRate
 from uuid import UUID
 
@@ -15,6 +15,7 @@ class Connection:
         self.src = src
         self.dst = dst
         self.bitRate = bitRate
+        self.routeIndex: Union[int, None] = None
         self.__connection: Dict[str, LinkDetails] = {}
 
     def addLinkInfo(self, linkID: str, slots: list, band: str = "NoBand"):
@@ -25,6 +26,9 @@ class Connection:
             "slots": [i for i in range(fromSlot, toSlot)],
             "band": band,
         }
+
+    def addRouteIndex(self, index: int):
+        self.routeIndex = index
 
     @property
     def eventID(self):

@@ -130,12 +130,7 @@ class RMSA_ENV(gym.Env):
         linksState = linksState.reshape(self.n_paths * 344)
         demandState = demandState.reshape(self.n_paths * len(self.allDemands))
         return np.concatenate(
-            (
-                srcState,
-                dstState,
-                linksState,
-                demandState,
-            ),
+            (srcState, dstState, linksState, demandState),
         )
 
     def reset(self, seed=None, options: Union[None, dict[str]] = None):

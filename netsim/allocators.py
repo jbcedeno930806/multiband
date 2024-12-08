@@ -1,7 +1,7 @@
 from .netSimPy import Network, Link, Connection
 from .netSimPy.network import AllocationResult
 from .utils import get_available_blocks, get_shared_link, pairwise
-from typing import List, Union
+from typing import List
 import enum
 
 
@@ -22,7 +22,7 @@ def sap_ff(n_paths=3):
         block = 0
         paths = network.paths
         for band in network.getBands():
-            for path in paths[c.src, c.dst][:n_paths]:
+            for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]
@@ -34,6 +34,7 @@ def sap_ff(n_paths=3):
                     numberOfSlots, linksOfPath, band, block + 1
                 )
                 if len(indexes) > 0:
+                    c.addRouteIndex(idp)
                     for link in linksOfPath:
                         c.addLinkInfo(
                             link.id,
@@ -50,7 +51,8 @@ def sap_ff(n_paths=3):
 def sap_ff2(n_paths=3):
     def sap_ff_func(c: Connection, network: Network, action: int = 0):
         """Versión clásica del first-fit en multibanda, sin ningún cambio adicional.
-        Se intenta en todas lasa rutas de la primera banda, luego todas las rutas de la segunda banda, y así suc.
+        Se intenta en todas lasa rutas de la primera banda, luego todas las rutas de
+        la segunda banda, y así suc.
 
         Args:
             c (Connection): _description_
@@ -64,7 +66,7 @@ def sap_ff2(n_paths=3):
         """
         paths = network.paths
         for band in network.getBands():
-            for path in paths[c.src, c.dst][:n_paths]:
+            for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]
@@ -76,6 +78,7 @@ def sap_ff2(n_paths=3):
                 index = _ff(shared_link, numberOfSlots)
                 if index == -1:
                     continue
+                c.addRouteIndex(idp)
                 for link in linksOfPath:
                     c.addLinkInfo(
                         link.id,
@@ -91,8 +94,9 @@ def sap_ff2(n_paths=3):
 
 def most_available_band_all_routes(n_paths=3):
     def mabar(c: Connection, network: Network, action: int = 0):
-        """Este algoritmo prioriza la banda más dispobible e intenta asignar en alguna de las rutas posibles, luego la segunda
-        banda más disponible e intenta asignar usando las rutas posibles, y así sucesivamente.
+        """Este algoritmo prioriza la banda más dispobible e intenta asignar en
+        alguna de las rutas posibles, luego la segunda banda más disponible e
+        intenta asignar usando las rutas posibles, y así sucesivamente.
 
         Args:
             c (Connection): _description_
@@ -108,7 +112,7 @@ def most_available_band_all_routes(n_paths=3):
         allocationInfo = []
 
         for band in network.getBands():
-            for idr, path in enumerate(paths[c.src, c.dst][:n_paths]):
+            for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]
@@ -120,6 +124,7 @@ def most_available_band_all_routes(n_paths=3):
                             "band": band,
                             "linksOfPath": linksOfPath,
                             "availibility": network.getBandAvailibility(band),
+                            "idp": idp,
                         }
                     )
         sortedList = sorted(
@@ -130,6 +135,7 @@ def most_available_band_all_routes(n_paths=3):
             shared_link = get_shared_link(info["linksOfPath"], info["band"])
             index = _ff(shared_link, info["numberOfSlots"])
             if index != -1:
+                c.addRouteIndex(info["idp"])
                 for link in info["linksOfPath"]:
                     c.addLinkInfo(
                         link.id,
@@ -149,8 +155,8 @@ def most_available_band_all_routes(n_paths=3):
 
 def shortest_route_most_available_band(n_paths=3):
     def srmab(c: Connection, network: Network, action: int = 0):
-        """Este algoritmo prioriza la ruta más corta y selecciona la banda más disponible, luego la segunda
-        ruta más corta y la banda más disponible, y así sucesivamente
+        """Este algoritmo prioriza la ruta más corta y selecciona la banda más disponible,
+        luego la segunda ruta más corta y la banda más disponible, y así sucesivamente
 
         Args:
             c (Connection): _description_
@@ -166,7 +172,7 @@ def shortest_route_most_available_band(n_paths=3):
         allocationInfo = []
 
         for band in network.getBands():
-            for idr, path in enumerate(paths[c.src, c.dst][:n_paths]):
+            for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]
@@ -178,15 +184,16 @@ def shortest_route_most_available_band(n_paths=3):
                             "band": band,
                             "linksOfPath": linksOfPath,
                             "availibility": network.getBandAvailibility(band),
-                            "idr": idr,
+                            "idp": idp,
                         }
                     )
-        sortedList = sorted(allocationInfo, key=lambda x: (x["idr"], -x["availibility"]))
+        sortedList = sorted(allocationInfo, key=lambda x: (x["idp"], -x["availibility"]))
 
         for info in sortedList:
             shared_link = get_shared_link(info["linksOfPath"], info["band"])
             index = _ff(shared_link, info["numberOfSlots"])
             if index != -1:
+                c.addRouteIndex(info["idp"])
                 for link in info["linksOfPath"]:
                     c.addLinkInfo(
                         link.id,
@@ -209,8 +216,8 @@ def least_fragmentation_band_prioritization(
     n_paths=3, variant: Variant = Variant.Greater_Fragmentation
 ):
     def lfbp(c: Connection, network: Network, action: int = 0):
-        """Este algoritmo prioriza la banda con menor/mayor fragmentación e intenta asignar usando todas las rutas de la más
-        corta a la más larga
+        """Este algoritmo prioriza la banda con menor/mayor fragmentación e intenta
+        asignar usando todas las rutas de la más corta a la más larga
 
         Args:
             c (Connection): _description_
@@ -226,7 +233,7 @@ def least_fragmentation_band_prioritization(
         allocationInfo = []
 
         for band in network.getBands():
-            for idr, path in enumerate(paths[c.src, c.dst][:n_paths]):
+            for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]
@@ -238,7 +245,7 @@ def least_fragmentation_band_prioritization(
                             "band": band,
                             "linksOfPath": linksOfPath,
                             "fragmentation": network.getBandFragmentation(band),
-                            "idr": idr,
+                            "idp": idp,
                         }
                     )
         if variant is Variant.Least_Fragmentation:
@@ -251,6 +258,7 @@ def least_fragmentation_band_prioritization(
             shared_link = get_shared_link(info["linksOfPath"], info["band"])
             index = _ff(shared_link, info["numberOfSlots"])
             if index != -1:
+                c.addRouteIndex(info["idp"])
                 for link in info["linksOfPath"]:
                     c.addLinkInfo(
                         link.id,

@@ -7,7 +7,7 @@ from .network import Network, AllocationResult
 from .node import Node
 from .randomVariable import RandomVariable
 from .eventGenerator import EventsGenerator
-from .simulator import Simulator
+from .simulator import NetworkSimulator, EventSimulator
 from .uniformVariable import UniformVariable
 
 __all__ = [
@@ -23,5 +23,6 @@ __all__ = [
     "RandomVariable",
     "EventsGenerator",
     "UniformVariable",
-    "Simulator",
+    "NetworkSimulator",
+    "EventSimulator",
 ]
