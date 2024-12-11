@@ -36,15 +36,22 @@ class Link:
             self.__slots[key] = [False] * len(self.__slots[key])
 
     def setSlots(self, slotsIndexes: List[int], value: bool, band: str = NO_BAND) -> None:
+        if value is False:
+            for slotIndex in slotsIndexes:
+                self.__slots[band][slotIndex] = False
+            return
         for slotIndex in slotsIndexes:
-            self.__slots[band][slotIndex] = value
+            if not self.getSlotValue(slotIndex, band):
+                self.__slots[band][slotIndex] = True
+            else:
+                raise ValueError(
+                    "Slot {} is already in use for link id {} and band {}".format(
+                        slotIndex, self.id, band
+                    )
+                )
 
     def getBands(self):
-        bands = []
-        for key in range(self.__slots):
-            if self.__slots[key] > 0:
-                bands.append(key)
-        return bands
+        return list(self.__slots.keys())
 
     def isBandEnabled(self, band):
         return band in self.__slots

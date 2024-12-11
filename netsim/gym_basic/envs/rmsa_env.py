@@ -5,8 +5,8 @@ from netsim.netSimPy import (
 )
 from gymnasium.spaces import MultiBinary
 from netsim.netSimPy.network import AllocationResult
-from netsim.netSimPy import Simulator, Event, Connection, Network, EventType
-from netsim.utils import get_shared_link, get_available_blocks, pairwise
+from netsim.netSimPy import NetworkSimulator, Event, Connection, Network, EventType
+from netsim.netSimPy.common.utils import get_shared_link, get_available_blocks, pairwise
 
 # types:
 from typing import List, Tuple, Union, Callable
@@ -37,9 +37,9 @@ class RMSA_ENV(gym.Env):
 
     def __init__(
         self,
-        simulator: Simulator,
+        simulator: NetworkSimulator,
         episode_length=100,
-        j=5,
+        j: int = 5,
         n_paths=3,
         allocator: Union[
             Callable[

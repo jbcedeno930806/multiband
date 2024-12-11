@@ -125,19 +125,10 @@ class Network:
         del self.__connections[connection.eventID]
 
     def useSlots(self, linkID: str, slotsIndexes: List[int], bandSelected="NoBand"):
-        link = self.__links[linkID]
-        for slotIndex in slotsIndexes:
-            if link.getSlotValue(slotIndex, bandSelected):
-                raise ValueError(
-                    "Slot {} is already in use for link id {} and band {}".format(
-                        slotIndex, linkID, bandSelected
-                    )
-                )
-        link.setSlots(slotsIndexes, True, bandSelected)
+        self.__links[linkID].setSlots(slotsIndexes, True, bandSelected)
 
     def unUseSlots(self, linkID: str, slotsIndexes: List[int], bandSelected="NoBand"):
-        link = self.__links[linkID]
-        link.setSlots(slotsIndexes, False, bandSelected)
+        self.__links[linkID].setSlots(slotsIndexes, False, bandSelected)
 
     def getNodesCount(self) -> int:
         return len(self.__nodes.keys())

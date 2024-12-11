@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Tuple, Union, Callable
 
 from ..netSimPy import EventsGenerator, EventType, Network, Connection, Event
-from .common.callback import NetworkCallback
+from .common.callbacks import NetworkCallback
 from ..netSimPy.network import AllocationResult
 
 
@@ -32,7 +32,6 @@ class EventSimulator(ABC):
     def get_public_attributes(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
 
-    @abstractmethod
     def _on_step(self, event: Event):
         return True
 
@@ -41,18 +40,17 @@ class EventSimulator(ABC):
         while event.getType() != EventType.Arrive:
             self._on_departure_event(event)
             event = self.__eventsGenerator.getNextEvent()
+        self._on_arrival(event)
         return event
 
-    @abstractmethod
+    def _on_arrival(self, event):
+        return
+
     def _on_departure_event(self, event: Event):
-        print("Abstrac on departure")
+        return
 
-    # @abstractmethod
-    # def _on_run_end(self):
-    #     print(f"Simulation finished for {self.steps} timesteps")
-
-    def setLambda(self, mLambda: 100):
-        self.__eventsGenerator.setLambda(mLambda)
+    def setLambda(self, value: int = 100):
+        self.__eventsGenerator.setLambda(value)
 
     def reset(self):
         self.__eventsGenerator.restart()
@@ -78,12 +76,10 @@ class NetworkSimulator(EventSimulator):
         super().__init__(eventsGenerator)
         self.network = network
         self.allocator = allocator
-        self.blockedEvents = 0
 
     def _on_step(self, event: Event):
         connection = self.network.generateConnectionRequest(event.id)
         result, con = self.allocator(connection, self.network)
-        self.update_metrics(result, con)
         if result == AllocationResult.Allocated:
             self.network.allocate(con)
             return True
@@ -93,15 +89,7 @@ class NetworkSimulator(EventSimulator):
         connection = self.network.getConnection(event.id)
         self.network.deallocate(connection)
 
-    def _on_run_end(self):
-        bp = round(self.blockedEvents / self.steps, 7)
-        print(f"Blocking probability:{bp}")
-
-    def update_metrics(self, result: AllocationResult, con: Connection):
-        if result != AllocationResult.Allocated:
-            self.blockedEvents += 1
-
-    def reset(self, hard_reset=False):
+    def reset(self):
         self.network.restart()
         super().reset()
 

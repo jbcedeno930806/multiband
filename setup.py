@@ -1,5 +1,34 @@
 from setuptools import setup, find_packages
 import glob
+import platform
+
+# Detect the operating system
+system = platform.system()
+
+
+def get_requires():
+    requires = [
+        "gymnasium",
+        "networkx",
+        "numpy",
+        "ipykernel",
+        "sb3_contrib",
+        "pandas",
+        "jsonschema",
+        "optuna",
+        # ---
+        # "matplotlib",
+        # "importlib-metadata",
+        # "protobuf",
+    ]
+
+    # Define the dependencies based on the operating system
+    if system == "Darwin":  # macOS
+        requires.extend(["tensorflow-macos", "tensorflow-metal"])
+    else:  # Windows or Linux
+        requires.extend(["tensorflow"])
+
+    return requires
 
 
 setup(
@@ -13,20 +42,5 @@ setup(
     packages=find_packages(),
     package_data={"": ["**/*.json"]},
     include_package_data=True,
-    install_requires=[
-        "gymnasium",
-        "tensorflow",
-        "tensorflow-metal",
-        "networkx",
-        "numpy",
-        "ipykernel",
-        "sb3_contrib",
-        "pandas",
-        "jsonschema",
-        "optuna",
-        # ---
-        # "matplotlib",
-        # "importlib-metadata",
-        # "protobuf",
-    ],
+    install_requires=get_requires(),
 )

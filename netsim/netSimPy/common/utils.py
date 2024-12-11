@@ -1,6 +1,6 @@
 import numpy as np
 import itertools
-from .netSimPy import Link
+from .. import Link
 from typing import List, Callable, Optional, Dict, Any
 import torch
 import optuna
@@ -73,7 +73,6 @@ def get_available_blocks(
     return initial_indices[final_indices], lengths[final_indices]
 
 
-
 def sample_PPO_params(trial: optuna.Trial) -> Dict[str, Any]:
     """Sampler for PPO hyperparameters."""
     learning_rate = trial.suggest_float("learning_rate", 0.0001, 0.001, step=0.0001)
@@ -84,7 +83,6 @@ def sample_PPO_params(trial: optuna.Trial) -> Dict[str, Any]:
     # max_grad_norm = trial.suggest_float("max_grad_norm", 2.4, 3.0, log=True)
     # gae_lambda = 1.0 - trial.suggest_float("gae_lambda", 0.009, 0.03, log=True)
     # ent_coef = trial.suggest_float("ent_coef", 0.00000001, 2.0741e-8, log=True)
-
 
     # Display true values.
     trial.set_user_attr("gamma", gamma)
@@ -148,8 +146,6 @@ def optimize(
         print("    {}: {}".format(key, value))
 
     return study
-
-
 
 
 def pairwise(iterable):

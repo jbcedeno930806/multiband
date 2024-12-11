@@ -1,5 +1,5 @@
-from .netSimPy import Network, Link, Connection
-from .netSimPy.network import AllocationResult
+from .. import Network, Link, Connection
+from ..network import AllocationResult
 from .utils import get_available_blocks, get_shared_link, pairwise
 from typing import List
 import enum
