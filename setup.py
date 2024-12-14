@@ -16,7 +16,9 @@ def get_requires():
         "pandas",
         "jsonschema",
         "optuna",
-        # ---
+        # --- Para imitation::
+        "seaborn",
+        "scikit-learn",
         # "matplotlib",
         # "importlib-metadata",
         # "protobuf",

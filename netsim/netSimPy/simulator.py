@@ -1,22 +1,22 @@
-from abc import ABC, abstractmethod
-
 # types:
-from typing import Tuple, Union, Callable
-
+from typing import Tuple, Union, Callable, Optional
 from ..netSimPy import EventsGenerator, EventType, Network, Connection, Event
-from .common.callbacks import NetworkCallback
+
+from .common.evaluators import EventEvaluator
 from ..netSimPy.network import AllocationResult
 
 
-class EventSimulator(ABC):
+class EventSimulator:
     def __init__(
         self,
         eventsGenerator: EventsGenerator,
     ):
         self.__eventsGenerator = eventsGenerator
-        self.event: Union[Event, None] = None
+        self.event: Optional[Event] = None
+        self.steps = 0
 
-    def run(self, timesteps: int, callback: Union[NetworkCallback, None] = None):
+    def run(self, timesteps: int, callback: Optional[EventEvaluator] = None):
+        callback and callback.on_init()
         self.steps = 0
         while self.steps != timesteps:
             self.event = self.runToNextArrivalEvent()
@@ -24,10 +24,8 @@ class EventSimulator(ABC):
                 self.event.setType(EventType.Departure)
                 self.__eventsGenerator.appendEvent(self.event)
             self.steps += 1
-            if callback:
-                callback.on_update(self.get_public_attributes())
-        if callback:
-            callback.on_run_end(self.get_public_attributes())
+            callback and callback.on_update(self.get_public_attributes())
+        callback and callback.on_run_end(self.get_public_attributes())
 
     def get_public_attributes(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}

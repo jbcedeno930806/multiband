@@ -4,3 +4,4 @@ build/*
 examples/nsfnet/tb/*
 examples/nsfnet/tmp/*
 .venv
+*.pkl

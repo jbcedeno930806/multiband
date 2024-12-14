@@ -5,6 +5,7 @@ Created on Wed Jun  1 17:35:49 2022
 @author: redno
 """
 
+from .base_env import BASE_ENV
 from .rmsa_env import RMSA_ENV
 from .routing_env import ROUTING_ENV
 from .routing_masked_env import ROUTING_MASKED_ENV
