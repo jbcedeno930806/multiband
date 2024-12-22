@@ -40,10 +40,11 @@ class BitRate:
         available_modulations = self.getAvailableModulationsByBand(route, band)
         best_modulation = None
         best_diff = math.inf
-        for modulation in available_modulations.values():
+        for key, modulation in available_modulations.items():
             diff = modulation["reach"] - route_length
             if diff >= 0 and diff <= best_diff:
                 best_modulation = modulation
+                best_modulation["name"] = key
                 best_diff = diff
         return best_modulation
 
@@ -53,7 +54,7 @@ class BitRate:
             info = json.load(json_file)
             bitsRate: list[BitRate] = []
             for bitRateTag in info:
-                bitRate = BitRate(bitRateTag, info[bitRateTag])
+                bitRate = BitRate(int(bitRateTag), info[bitRateTag])
                 bitsRate.append(bitRate)
             return bitsRate
 

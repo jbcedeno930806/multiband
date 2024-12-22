@@ -1,73 +1,95 @@
-from netsim.netSimPy import (
-    EventsGenerator,
-    EventType,
-    Network,
-    Connection,
-)
-from netsim.netSimPy.network import AllocationResult
-
 # types:
-from typing import Tuple, Union, Callable
+from typing import Tuple, Union, Callable, Optional
+from ..netSimPy import EventsGenerator, EventType, Network, Connection, Event
+
+from .common.evaluators import EventEvaluator
+from ..netSimPy.network import AllocationResult
 
 
-class Simulator:
+class EventSimulator:
+    def __init__(
+        self,
+        eventsGenerator: EventsGenerator,
+    ):
+        self.__eventsGenerator = eventsGenerator
+        self.event: Optional[Event] = None
+        self.steps = 0
+
+    def run(self, timesteps: int, callback: Optional[EventEvaluator] = None):
+        callback and callback.on_init()
+        self.steps = 0
+        while self.steps != timesteps:
+            self.event = self.runToNextArrivalEvent()
+            if self._on_step(self.event):
+                self.event.setType(EventType.Departure)
+                self.__eventsGenerator.appendEvent(self.event)
+            self.steps += 1
+            callback and callback.on_update(self.get_public_attributes())
+        callback and callback.on_run_end(self.get_public_attributes())
+
+    def get_public_attributes(self):
+        return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+
+    def _on_step(self, event: Event):
+        return True
+
+    def runToNextArrivalEvent(self):
+        event = self.__eventsGenerator.getNextEvent()
+        while event.getType() != EventType.Arrive:
+            self._on_departure_event(event)
+            event = self.__eventsGenerator.getNextEvent()
+        self._on_arrival(event)
+        return event
+
+    def _on_arrival(self, event):
+        return
+
+    def _on_departure_event(self, event: Event):
+        return
+
+    def setLambda(self, value: int = 100):
+        self.__eventsGenerator.setLambda(value)
+
+    def reset(self):
+        self.__eventsGenerator.restart()
+
+    @property
+    def eventsGenerator(self):
+        return self.__eventsGenerator
+
+
+class NetworkSimulator(EventSimulator):
     def __init__(
         self,
         network: Network,
         eventsGenerator: EventsGenerator,
         allocator: Union[
             Callable[
-                [Connection, Network],
+                [Connection, Network, int],
                 Tuple[AllocationResult, Connection],
             ],
             None,
         ] = None,
-        n_paths=1,
     ):
-        self.n_paths = n_paths
-        self.__network = network
-        self.__eventsGenerator = eventsGenerator
-        self.setAllocatorFunc(allocator)
-        self.blockedEvents = 0
-        self.numberOfArrivalEvents = 0
-        self.totalNumberOfArrivals = 0
+        super().__init__(eventsGenerator)
+        self.network = network
+        self.allocator = allocator
 
-    def run(self, timesteps: int):
-        steps = 0
-        while steps != timesteps:
-            event = self.runToNextArrivalEvent()
-            connection = self.__network.generateConnectionRequest(event.id)
-            result, con = self.allocator(connection, self.__network)
-            if result == AllocationResult.Allocated:
-                self.__network.allocate(con)
-                event.setType(EventType.Departure)
-                self.__eventsGenerator.appendEvent(event)
-            else:
-                self.blockedEvents += 1
+    def _on_step(self, event: Event):
+        connection = self.network.generateConnectionRequest(event.id)
+        result, con = self.allocator(connection, self.network)
+        if result == AllocationResult.Allocated:
+            self.network.allocate(con)
+            return True
+        return False
 
-            steps += 1
-        print(f"Blocking probability:{round(self.blockedEvents/steps, 7)}")
-
-    def runToNextArrivalEvent(self):
-        event = self.__eventsGenerator.getNextEvent()
-        while event.getType() != EventType.Arrive:
-            connection = self.__network.getConnection(event.id)
-            self.__network.deallocate(connection)
-            event = self.__eventsGenerator.getNextEvent()
-        return event
-
-    def setLambda(self, mLambda: 100):
-        self.__eventsGenerator.setLambda(mLambda)
+    def _on_departure_event(self, event):
+        connection = self.network.getConnection(event.id)
+        self.network.deallocate(connection)
 
     def reset(self):
-        self.__network.restart()
-        self.__eventsGenerator.restart()
-        self.restartMetrics()
-
-    def restartMetrics(self):
-        self.numberOfArrivalEvents = 0
-        self.totalNumberOfArrivals = 0
-        self.blockedEvents = 0
+        self.network.restart()
+        super().reset()
 
     def setAllocatorFunc(
         self,

@@ -26,6 +26,8 @@ class EventsGenerator:
 
     def restart(self):
         self.__clock = 0
+        self.__arriveVariable = ExpVariable(self.__seed, self.__lambda)
+        self.__departVariable = ExpVariable(self.__seed, self.__mu)
         self.__events: List[Event] = []
         startTime = self.__clock + self._getNextArrivalValue()
         endTime = startTime + self._getNextDepartValue()
@@ -40,9 +42,6 @@ class EventsGenerator:
             newEvent = self.createEvent(startTime, endTime)
             self.appendEvent(newEvent)
         return event
-
-    def getCurrentEvent(self):
-        return self.__events[0]
 
     @staticmethod
     def createEvent(startTime: float, endTime: float) -> Event:

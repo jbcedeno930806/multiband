@@ -40,7 +40,7 @@ class Network:
         seed: int = 12345,
     ):
         self.__seed = seed
-        self.__nodes, self.__links, self.__bands_info = Network.readNetwork(
+        self.__nodes, self.__links, self.__bands_capacity = Network.readNetwork(
             networkFileName
         )
         self.__paths = Network.readPathFile(pathsFileName)
@@ -125,19 +125,10 @@ class Network:
         del self.__connections[connection.eventID]
 
     def useSlots(self, linkID: str, slotsIndexes: List[int], bandSelected="NoBand"):
-        link = self.__links[linkID]
-        for slotIndex in slotsIndexes:
-            if link.getSlotValue(slotIndex, bandSelected):
-                raise ValueError(
-                    "Slot {} is already in use for link id {} and band {}".format(
-                        slotIndex, linkID, bandSelected
-                    )
-                )
-        link.setSlots(slotsIndexes, True, bandSelected)
+        self.__links[linkID].setSlots(slotsIndexes, True, bandSelected)
 
     def unUseSlots(self, linkID: str, slotsIndexes: List[int], bandSelected="NoBand"):
-        link = self.__links[linkID]
-        link.setSlots(slotsIndexes, False, bandSelected)
+        self.__links[linkID].setSlots(slotsIndexes, False, bandSelected)
 
     def getNodesCount(self) -> int:
         return len(self.__nodes.keys())
@@ -154,10 +145,22 @@ class Network:
             )
 
     def getBands(self):
-        return self.__bands_info.keys()
+        return list(self.__bands_capacity.keys())
+
+    def getCapacityOfBands(self):
+        return self.__bands_capacity
+
+    def getBandAvailibility(self, band: str):
+        return sum(link.getAvailibility(band) for link in self.links.values())
+
+    def getBandFragmentation(self, band: str):
+        return sum(link.getFragmentation(band) for link in self.links.values())
+
+    def getRouteFragmentation(self, route: List[Link], band: str):
+        return sum(link.getFragmentation(band) for link in route)
 
     def getCapacityOfBand(self, band: str):
-        return self.__bands_info[band]
+        return self.__bands_capacity[band]
 
     def generateConnectionRequest(self, eventID: UUID):
         src = self.__srcVariable.getNextIntValue()

@@ -1,0 +1,23 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jun  1 17:33:53 2022
+
+@author: redno
+"""
+
+from gymnasium.envs.registration import register
+
+register(
+    id="RMSA_ENV-v0",
+    entry_point="netsim.gym_basic.envs:RMSA_ENV",
+)
+
+register(
+    id="ROUTING_ENV-v0",
+    entry_point="netsim.gym_basic.envs:ROUTING_ENV",
+)
+
+register(
+    id="ROUTING_MASKED_ENV-v0",
+    entry_point="netsim.gym_basic.envs:ROUTING_MASKED_ENV",
+)

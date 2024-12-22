@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import List, Dict, TypedDict
+from typing import List, Dict, TypedDict, Union
 from .bitRate import BitRate
 from uuid import UUID
 
@@ -7,6 +7,7 @@ from uuid import UUID
 class LinkDetails(TypedDict):
     slots: List[int]
     band: str
+    modulation: str
 
 
 class Connection:
@@ -15,16 +16,34 @@ class Connection:
         self.src = src
         self.dst = dst
         self.bitRate = bitRate
+        self.routeIndex: Union[int, None] = None
         self.__connection: Dict[str, LinkDetails] = {}
 
-    def addLinkInfo(self, linkID: str, slots: list, band: str = "NoBand"):
-        self.__connection[linkID] = {"slots": slots, "band": band}
+    def addLinkInfo(
+        self, linkID: str, slots: list, band: str = "NoBand", modulation="Unset"
+    ):
+        self.__connection[linkID] = {
+            "slots": slots,
+            "band": band,
+            "modulation": modulation,
+        }
 
-    def addLinkInfo(self, linkID: str, fromSlot: int, toSlot: int, band: str = "NoBand"):
+    def addLinkInfo(
+        self,
+        linkID: str,
+        fromSlot: int,
+        toSlot: int,
+        band: str = "NoBand",
+        modulation="Unset",
+    ):
         self.__connection[linkID] = {
             "slots": [i for i in range(fromSlot, toSlot)],
             "band": band,
+            "modulation": modulation,
         }
+
+    def addRouteIndex(self, index: int):
+        self.routeIndex = index
 
     @property
     def eventID(self):
@@ -49,3 +68,6 @@ class Connection:
 
     def getConnectionInfo(self):
         return self.__connection
+
+    def getModulationName(self, linkID: str):
+        return self.__connection[linkID]["modulation"]["name"]
