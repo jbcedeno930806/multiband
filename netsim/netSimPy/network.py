@@ -153,6 +153,9 @@ class Network:
     def getBandAvailibility(self, band: str):
         return sum(link.getAvailibility(band) for link in self.links.values())
 
+    def getRouteAvailibility(self, route: List[Link], band: str):
+        return sum(link.getAvailibility(band) for link in route)
+
     def getBandFragmentation(self, band: str):
         return sum(link.getFragmentation(band) for link in self.links.values())
 
