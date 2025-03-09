@@ -88,8 +88,15 @@ def main():
                         )
                     )
                     paths = []
+                    lengths = []
                     for counter, path in enumerate(X):
                         paths.append(path)
+                        lengths.append(
+                            sum(
+                                G.get_edge_data(a, b)["weight"]
+                                for (a, b) in list(zip(path, path[1:]))
+                            )
+                        )
                         if counter == total_routes - 1:
                             break
                     data_routes = {}
@@ -97,6 +104,7 @@ def main():
                         "src": initial_node,
                         "dst": end_node,
                         "paths": paths,
+                        "lengths": lengths,
                     }
                     routes.append(data_routes)
 

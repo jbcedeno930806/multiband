@@ -6,6 +6,7 @@ import os
 from typing import Dict, Any, Optional, Tuple, Union
 
 from ..event import Event, EventType
+from ..network import Network, Connection
 
 
 class ResultWriter:
@@ -134,3 +135,83 @@ class SimpleEvaluator(EventEvaluator):
 
     def _on_run_end(self, args):
         print("Total blocked events: {}".format(self.metrics["blockedEvents"]))
+
+
+class NetworkEvaluator(EventEvaluator):
+    metrics = None
+
+    def __init__(
+        self,
+        name,
+        bands=["C", "S", "L", "E"],
+        filename="net.evaluations",
+        header=None,
+        info_keywords=[],
+        override_existing=True,
+    ):
+        self.metrics = {
+            "steps": 0,
+            "blockedEvents": 0,
+            "attendedByRouteIndex": {},
+            "totalAttendedByBand": {},
+            "totalAttended": 0,
+            "attendedByModulation": {},
+            "blockedBitRateByBitRate": {},
+            "totalBitRate": 0,
+            "bitRateByBand": {},
+        }
+        super().__init__(
+            name + filename,
+            header,
+            info_keywords=list(self.metrics.keys()) + info_keywords,
+            override_existing=override_existing,
+        )
+        self.bands = bands
+
+        for band in self.bands:
+            self.metrics["totalAttendedByBand"][band] = 0
+            self.metrics["blockedBitRateByBitRate"] = {}
+            self.metrics["bitRateByBand"][band] = 0
+
+    def _on_run_end(self, args):
+        block = self.metrics["blockedEvents"]
+        steps = self.metrics["steps"]
+        self.results_writer.write_row(self.metrics)
+        print(f"Blocking probability: {round(block/steps, 6)}")
+
+    def _on_update(self, args):
+        event: Event = args["event"]
+        self.metrics["steps"] = args["steps"]
+        network: Network = args.get("network", None)
+        con: Connection = args["connection"]
+
+        # connect = args["connection"]
+        # conID = connect.eventID
+        if event.getType() != EventType.Departure:
+            self.metrics["blockedEvents"] += 1
+            if con.bitRate.getBitRate() not in self.metrics["blockedBitRateByBitRate"]:
+                self.metrics["blockedBitRateByBitRate"][con.bitRate.getBitRate()] = 0
+            self.metrics["blockedBitRateByBitRate"][
+                con.bitRate.getBitRate()
+            ] += con.bitRate.getBitRate()
+        if network is not None:
+            if event.getType() == EventType.Departure:
+                # if conID != con.eventID:
+                #     print("ERRRRROOOOORRRR")
+                # the event was allocated, get connection associated:
+                self.metrics["totalAttended"] += 1
+                self.metrics["totalBitRate"] += con.bitRate.getBitRate()
+                band = con.getBand(con.linksID[0])
+                self.metrics["totalAttendedByBand"][band] += 1
+                self.metrics["bitRateByBand"][band] += con.bitRate.getBitRate()
+                modulation = con.getModulationName(con.linksID[0])
+                if modulation not in self.metrics["attendedByModulation"]:
+                    self.metrics["attendedByModulation"][modulation] = 1
+                else:
+                    self.metrics["attendedByModulation"][modulation] += 1
+
+                if con.routeIndex is not None:
+                    if con.routeIndex not in self.metrics["attendedByRouteIndex"]:
+                        self.metrics["attendedByRouteIndex"][con.routeIndex] = 1
+                    else:
+                        self.metrics["attendedByRouteIndex"][con.routeIndex] += 1

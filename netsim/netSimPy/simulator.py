@@ -73,11 +73,12 @@ class NetworkSimulator(EventSimulator):
     ):
         super().__init__(eventsGenerator)
         self.network = network
+        self.connection = None
         self.allocator = allocator
 
     def _on_step(self, event: Event):
-        connection = self.network.generateConnectionRequest(event.id)
-        result, con = self.allocator(connection, self.network)
+        self.connection = self.network.generateConnectionRequest(event.id)
+        result, con = self.allocator(self.connection, self.network)
         if result == AllocationResult.Allocated:
             self.network.allocate(con)
             return True

@@ -87,7 +87,10 @@ class Network:
 
     @staticmethod
     def readPathFile(pathFileName) -> dict[int, list]:
-        paths = {}
+        paths = {
+            "routes": {},
+            "lengths": {},
+        }
         with open(pathFileName) as file:
             filePaths = json.load(file)
             all_routes = filePaths["routes"]
@@ -95,7 +98,9 @@ class Network:
                 src: int = r["src"]
                 dst: int = r["dst"]
                 routes: list = r["paths"]
-                paths[src, dst] = routes
+                lengths: list = r["lengths"]
+                paths["routes"][src, dst] = routes
+                paths["lengths"][src, dst] = lengths
         return paths
 
     def allocate(self, con: Connection) -> AllocationResult:
@@ -192,7 +197,11 @@ class Network:
 
     @property
     def paths(self):
-        return self.__paths
+        return self.__paths["routes"]
+
+    @property
+    def lengths(self) -> List[float]:
+        return self.__paths["lengths"]
 
     @property
     def bitRates(self):

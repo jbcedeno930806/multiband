@@ -21,12 +21,15 @@ def sap_ff(n_paths=3):
         """
         block = 0
         paths = network.paths
+        lengths = network.lengths
         for band in network.getBands():
             for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]
-                bestModulation = c.bitRate.getBestModulationByBand(linksOfPath, band)
+                bestModulation = c.bitRate.getBestModulationByBand(
+                    linksOfPath, lengths[c.src, c.dst][idp], band
+                )
                 if bestModulation is None:
                     continue
                 numberOfSlots = bestModulation["slots"]
@@ -66,12 +69,15 @@ def sap_ff2(n_paths=3):
             _type_: _description_
         """
         paths = network.paths
+        lengths = network.lengths
         for band in network.getBands():
             for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]
-                bestModulation = c.bitRate.getBestModulationByBand(linksOfPath, band)
+                bestModulation = c.bitRate.getBestModulationByBand(
+                    linksOfPath, lengths[c.src, c.dst][idp], band
+                )
                 if bestModulation is None:
                     continue
                 numberOfSlots = bestModulation["slots"]
@@ -111,6 +117,7 @@ def most_available_band_all_routes(n_paths=3):
             _type_: _description_
         """
         paths = network.paths
+        lengths = network.lengths
         allocationInfo = []
 
         for band in network.getBands():
@@ -118,7 +125,9 @@ def most_available_band_all_routes(n_paths=3):
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]
-                bestModulation = c.bitRate.getBestModulationByBand(linksOfPath, band)
+                bestModulation = c.bitRate.getBestModulationByBand(
+                    linksOfPath, lengths[c.src, c.dst][idp], band
+                )
                 if bestModulation is not None:
                     allocationInfo.append(
                         {
@@ -170,6 +179,7 @@ def most_available_route(n_paths=3):
             _type_: _description_
         """
         paths = network.paths
+        lengths = network.lengths
         allocationInfo = []
 
         for band in network.getBands():
@@ -177,7 +187,9 @@ def most_available_route(n_paths=3):
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]
-                bestModulation = c.bitRate.getBestModulationByBand(linksOfPath, band)
+                bestModulation = c.bitRate.getBestModulationByBand(
+                    linksOfPath, lengths[c.src, c.dst][idp], band
+                )
                 if bestModulation is not None:
                     allocationInfo.append(
                         {
@@ -234,6 +246,7 @@ def shortest_route_most_available_band(n_paths=3):
             _type_: _description_
         """
         paths = network.paths
+        lengths = network.lengths
         allocationInfo = []
 
         for band in network.getBands():
@@ -241,7 +254,9 @@ def shortest_route_most_available_band(n_paths=3):
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]
-                bestModulation = c.bitRate.getBestModulationByBand(linksOfPath, band)
+                bestModulation = c.bitRate.getBestModulationByBand(
+                    linksOfPath, lengths[c.src, c.dst][idp], band
+                )
                 if bestModulation is not None:
                     allocationInfo.append(
                         {
@@ -297,6 +312,7 @@ def least_fragmentation_band_prioritization(
             _type_: _description_
         """
         paths = network.paths
+        lengths = network.lengths
         allocationInfo = []
 
         for band in network.getBands():
@@ -304,7 +320,9 @@ def least_fragmentation_band_prioritization(
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]
-                bestModulation = c.bitRate.getBestModulationByBand(linksOfPath, band)
+                bestModulation = c.bitRate.getBestModulationByBand(
+                    linksOfPath, lengths[c.src, c.dst][idp], band
+                )
                 if bestModulation is not None:
                     allocationInfo.append(
                         {
@@ -346,6 +364,7 @@ def band_fragmentation_porcentage(
 ):
     def bfp(c: Connection, network: Network, action: int = 0):
         paths = network.paths
+        lengths = network.lengths
         allocationInfo = []
 
         for band in network.getBands():
@@ -353,7 +372,9 @@ def band_fragmentation_porcentage(
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]
-                bestModulation = c.bitRate.getBestModulationByBand(linksOfPath, band)
+                bestModulation = c.bitRate.getBestModulationByBand(
+                    linksOfPath, lengths[c.src, c.dst][idp], band
+                )
                 if bestModulation is not None:
                     allocationInfo.append(
                         {
@@ -394,6 +415,7 @@ def band_fragmentation_porcentage(
 def route_fragmentation(n_paths=3, variant: Variant = Variant.Greater_Fragmentation):
     def rf(c: Connection, network: Network, action: int = 0):
         paths = network.paths
+        lengths = network.lengths
         allocationInfo = []
 
         for band in network.getBands():
@@ -401,7 +423,9 @@ def route_fragmentation(n_paths=3, variant: Variant = Variant.Greater_Fragmentat
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]
-                bestModulation = c.bitRate.getBestModulationByBand(linksOfPath, band)
+                bestModulation = c.bitRate.getBestModulationByBand(
+                    linksOfPath, lengths[c.src, c.dst][idp], band
+                )
                 if bestModulation is not None:
                     allocationInfo.append(
                         {
@@ -445,6 +469,7 @@ def route_fragmentation_porcentage(
 ):
     def rfp(c: Connection, network: Network, action: int = 0):
         paths = network.paths
+        lengths = network.lengths
         allocationInfo = []
 
         for band in network.getBands():
@@ -452,7 +477,9 @@ def route_fragmentation_porcentage(
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]
-                bestModulation = c.bitRate.getBestModulationByBand(linksOfPath, band)
+                bestModulation = c.bitRate.getBestModulationByBand(
+                    linksOfPath, lengths[c.src, c.dst][idp], band
+                )
                 if bestModulation is not None:
                     allocationInfo.append(
                         {
@@ -490,6 +517,124 @@ def route_fragmentation_porcentage(
         return AllocationResult.Not_Allocated, c
 
     return rfp
+
+
+def alphaBalancing(
+    n_paths=3, alphas=[0.5, 1], bandsOrders=[["C", "L", "S", "E"], ["E", "S", "L", "C"]]
+):
+
+    def abpa(c: Connection, network: Network, action: int = 0):
+        paths = network.paths
+        lengths = network.lengths
+        for ida, alpha in enumerate(alphas):
+            for band in bandsOrders[ida]:
+                for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
+                    linksOfPath: List[Link] = [
+                        network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
+                    ]
+                    bestModulation = c.bitRate.getBestModulationByBand(
+                        linksOfPath, lengths[c.src, c.dst][idp], band
+                    )
+                    if bestModulation is not None:
+                        bandOccupancy = network.getCapacityOfBand(
+                            band
+                        ) - network.getBandAvailibility(band)
+                        if alpha == 1:
+                            candAllocate = True
+                        else:
+                            candAllocate = bandOccupancy + bestModulation[
+                                "slots"
+                            ] >= network.getCapacityOfBand(band) * (1 - alpha)
+                        if candAllocate:
+                            shared_link = get_shared_link(linksOfPath, band)
+                            index = _ff(shared_link, bestModulation["slots"])
+                            if index != -1:
+                                c.addRouteIndex(idp)
+                                for link in linksOfPath:
+                                    c.addLinkInfo(
+                                        link.id,
+                                        fromSlot=index,
+                                        toSlot=index + bestModulation["slots"],
+                                        band=band,
+                                        modulation=bestModulation,
+                                    )
+                                return AllocationResult.Allocated, c
+        return AllocationResult.Not_Allocated, c
+
+    return abpa
+
+
+def bitrate_partition_allocation(
+    n_paths=1, meanBitrate=100, bandsOrders=[["C", "L", "S", "E"], ["E", "L", "S", "C"]]
+):
+    def bpa(c: Connection, network: Network, action: int = 0):
+        paths = network.paths
+        lengths = network.lengths
+        bitrate = c.bitRate.getBitRate()
+        selectedBands = bandsOrders[1] if bitrate >= meanBitrate else bandsOrders[0]
+        for band in selectedBands:
+            for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
+                linksOfPath: List[Link] = [
+                    network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
+                ]
+                bestModulation = c.bitRate.getBestModulationByBand(
+                    linksOfPath, lengths[c.src, c.dst][idp], band
+                )
+                if bestModulation is not None:
+                    shared_link = get_shared_link(linksOfPath, band)
+                    index = _ff(shared_link, bestModulation["slots"])
+                    if index != -1:
+                        c.addRouteIndex(idp)
+                        for link in linksOfPath:
+                            c.addLinkInfo(
+                                link.id,
+                                fromSlot=index,
+                                toSlot=index + bestModulation["slots"],
+                                band=band,
+                                modulation=bestModulation,
+                            )
+                        return AllocationResult.Allocated, c
+        return AllocationResult.Not_Allocated, c
+
+    return bpa
+
+
+def length_partition_allocation(
+    n_paths=1, meanLength=100, bandsOrders=[["E", "S", "C", "L"], ["L", "C", "S", "E"]]
+):
+    def lpa(c: Connection, network: Network, action: int = 0):
+        paths = network.paths
+        lengths = network.lengths
+
+        for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
+            linksOfPath: List[Link] = [
+                network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
+            ]
+            route_length = lengths[c.src, c.dst][idp]
+            selectedBands = (
+                bandsOrders[1] if route_length >= meanLength else bandsOrders[0]
+            )
+            for band in selectedBands:
+                bestModulation = c.bitRate.getBestModulationByBand(
+                    linksOfPath, lengths[c.src, c.dst][idp], band
+                )
+                if bestModulation is not None:
+                    shared_link = get_shared_link(linksOfPath, band)
+                    index = _ff(shared_link, bestModulation["slots"])
+                    if index != -1:
+                        c.addRouteIndex(idp)
+                        for link in linksOfPath:
+                            c.addLinkInfo(
+                                link.id,
+                                fromSlot=index,
+                                toSlot=index + bestModulation["slots"],
+                                band=band,
+                                modulation=bestModulation,
+                            )
+                        return AllocationResult.Allocated, c
+        return AllocationResult.Not_Allocated, c
+
+    return lpa
 
 
 def _ff(shared_link, numberOfSlots):

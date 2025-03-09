@@ -35,13 +35,12 @@ class BitRate:
             available_modulations[band] = byBand
         return available_modulations
 
-    def getBestModulationByBand(self, route: List[Link], band: str):
-        route_length = sum([link.length for link in route])
+    def getBestModulationByBand(self, route: List[Link], length: float, band: str):
         available_modulations = self.getAvailableModulationsByBand(route, band)
         best_modulation = None
         best_diff = math.inf
         for key, modulation in available_modulations.items():
-            diff = modulation["reach"] - route_length
+            diff = modulation["reach"] - length
             if diff >= 0 and diff <= best_diff:
                 best_modulation = modulation
                 best_modulation["name"] = key

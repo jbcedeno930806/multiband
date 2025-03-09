@@ -149,7 +149,8 @@ def optimize(
 
 
 def pairwise(iterable):
+    return list(zip(iterable, iterable[1:]))
     # pairwise('ABCDEFG') --> AB BC CD DE EF FG
-    a, b = itertools.tee(iterable)
-    next(b, None)
-    return zip(a, b)
+    # a, b = itertools.tee(iterable)
+    # next(b, None)
+    # return zip(a, b)
