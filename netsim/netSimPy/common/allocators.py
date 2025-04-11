@@ -1,11 +1,11 @@
 from .. import Network, Link, Connection
 from ..network import AllocationResult
 from .utils import get_available_blocks, get_shared_link, pairwise
-from typing import List
+from typing import List, Optional
 import enum
 
 
-def sap_ff(n_paths=3):
+def sap_ff(n_paths=3, bands: Optional[List[str]] = None):
     def sap_ff_func(c: Connection, network: Network, action: int = 0):
         """Versión de first-fit usada en aprendizaje reforzado, donde te da los bloques
 
@@ -22,7 +22,8 @@ def sap_ff(n_paths=3):
         block = 0
         paths = network.paths
         lengths = network.lengths
-        for band in network.getBands():
+        analyzed_bands = bands if bands is not None else network.getBands()
+        for band in analyzed_bands:
             for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
@@ -100,6 +101,8 @@ def sap_ff2(n_paths=3):
     return sap_ff_func
 
 
+# TODO: Corregir, dado que ladisponibilidad de la bando no tiene en cuenta
+# las distintas rutas, esto ahora mucho cálculo
 def most_available_band_all_routes(n_paths=3):
     def mabar(c: Connection, network: Network, action: int = 0):
         """Este algoritmo prioriza la banda más dispobible e intenta asignar en
@@ -162,6 +165,8 @@ def most_available_band_all_routes(n_paths=3):
     return mabar
 
 
+# TODO: Esto estaría malo, la ruta más disponible estaría priorizando la ruta
+# más larga por como se esta calculando la disponibilidad
 def most_available_route(n_paths=3):
     def mar(c: Connection, network: Network, action: int = 0):
         """Este algoritmo prioriza la banda más dispobible e intenta asignar en
@@ -226,10 +231,8 @@ def most_available_route(n_paths=3):
     return mar
 
 
-# Cambiar para priorizar primero la ruta y luego la banda, similar al alg de arriba:
-# Probar priorizar bandas basado en la banda de menor/mayor fragmentación
-
-
+# TODO Probar primero este algoritmo:
+# TODO: Calcula r la disponibilidad ponderando la disponibilidad de la ruta
 def shortest_route_most_available_band(n_paths=3):
     def srmab(c: Connection, network: Network, action: int = 0):
         """Este algoritmo prioriza la ruta más corta y selecciona la banda más disponible,
@@ -294,6 +297,9 @@ class Variant(enum.Enum):
     Greater_Fragmentation = "Greater_Fragmentation"
 
 
+# Se prioriza la banda menos/más fragmentada y se escogen las rutas de la más
+# corta a la más larga
+# TODO: se debe calcular en funcion de la fragmentación ponderada de la ruta
 def least_fragmentation_band_prioritization(
     n_paths=3, variant: Variant = Variant.Greater_Fragmentation
 ):
@@ -359,6 +365,9 @@ def least_fragmentation_band_prioritization(
     return lfbp
 
 
+# Aqui se prioriza el porcentage de la fragmentación, y luego se escoge
+# la ruta de menor a mayor
+# TODO: Corregir para considerar la fragmentación ponderada de los enlaces de la ruta
 def band_fragmentation_porcentage(
     n_paths=3, variant: Variant = Variant.Greater_Fragmentation
 ):
@@ -412,6 +421,7 @@ def band_fragmentation_porcentage(
     return bfp
 
 
+# TODO: Corregir para considerar la fragmentación ponderada de los enlaces de la ruta
 def route_fragmentation(n_paths=3, variant: Variant = Variant.Greater_Fragmentation):
     def rf(c: Connection, network: Network, action: int = 0):
         paths = network.paths
@@ -464,6 +474,9 @@ def route_fragmentation(n_paths=3, variant: Variant = Variant.Greater_Fragmentat
     return rf
 
 
+# TODO Luego probar este:
+# TODO: Corregir para considerar la fragmentación ponderada de los enlaces de la ruta
+# Corregir para priorizar las primeras rutas menos fragmentadas
 def route_fragmentation_porcentage(
     n_paths=3, variant: Variant = Variant.Greater_Fragmentation
 ):
@@ -536,16 +549,18 @@ def alphaBalancing(
                         linksOfPath, lengths[c.src, c.dst][idp], band
                     )
                     if bestModulation is not None:
-                        bandOccupancy = network.getCapacityOfBand(
-                            band
-                        ) - network.getBandAvailibility(band)
                         if alpha == 1:
                             candAllocate = True
                         else:
+                            bandOccupancy = network.getCapacityOfBand(band) * len(
+                                linksOfPath
+                            ) - network.getRouteAvailibility(linksOfPath, band)
                             candAllocate = bandOccupancy + bestModulation[
                                 "slots"
-                            ] >= network.getCapacityOfBand(band) * (1 - alpha)
-                        if candAllocate:
+                            ] <= network.getCapacityOfBand(band) * len(linksOfPath) * (
+                                1 - alpha
+                            )
+                        if candAllocate is True:
                             shared_link = get_shared_link(linksOfPath, band)
                             index = _ff(shared_link, bestModulation["slots"])
                             if index != -1:

@@ -1,5 +1,5 @@
 **Requerimientos**
-Python 3.12.3
+Python 3.10.16 (brew install python@3.10)
 
 **Instalación**
 ***1 - Creación y activación del environment***

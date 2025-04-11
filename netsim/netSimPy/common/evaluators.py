@@ -64,6 +64,7 @@ class EventEvaluator(ABC):
         self,
         filename: Optional[str] = None,
         header: Optional[Dict[str, Union[float, str]]] = None,
+        should_save: bool = True,
         info_keywords: Tuple[str] = [],
         override_existing: bool = True,
     ):
@@ -71,24 +72,27 @@ class EventEvaluator(ABC):
         self.blockedEvents = 0
         self.filename = filename
         self.header = header
+        self.should_save = should_save
         self.info_keywords = info_keywords
         self.override_existing = override_existing
         self.results_writer = None
 
     def on_init(self):
-        self.results_writer = ResultWriter(
-            self.filename,
-            self.header,
-            self.info_keywords,
-            self.override_existing,
-        )
+        if self.should_save:
+            self.results_writer = ResultWriter(
+                self.filename,
+                self.header,
+                self.info_keywords,
+                self.override_existing,
+            )
 
     def on_update(self, args: Dict[str, Any]):
-        self.results_writer.write_row(self._on_update(args))
+        data = self._on_update(args)
+        self.results_writer and self.results_writer.write_row(data)
 
     def on_run_end(self, args: Dict[str, Any]):
         self._on_run_end(args)
-        self.results_writer.close()
+        self.results_writer and self.results_writer.close()
 
     @abstractmethod
     def _on_update(self, args: Dict[str, Any]) -> Union[Dict[str, Any], None]:
@@ -115,6 +119,7 @@ class SimpleEvaluator(EventEvaluator):
         self,
         filename: Optional[str] = "evaluations",
         header: Optional[Dict[str, Union[float, str]]] = {"timestamp": time.time()},
+        should_save: bool = False,
         info_keywords: Tuple[str] = [],
         override_existing: bool = True,
     ):
@@ -122,6 +127,7 @@ class SimpleEvaluator(EventEvaluator):
         super().__init__(
             filename,
             header,
+            should_save=should_save,
             info_keywords=list(self.metrics.keys()) + info_keywords,
             override_existing=override_existing,
         )
@@ -131,10 +137,15 @@ class SimpleEvaluator(EventEvaluator):
         if event.getType() != EventType.Departure:
             self.metrics["blockedEvents"] += 1
         self.metrics["steps"] = args["steps"]
-        return self.metrics
+        # return self.metrics
 
     def _on_run_end(self, args):
-        print("Total blocked events: {}".format(self.metrics["blockedEvents"]))
+        bp = round(self.metrics["blockedEvents"] / self.metrics["steps"], 4)
+        print(
+            "Total blocked events: {} for a BP={}".format(
+                self.metrics["blockedEvents"], bp
+            )
+        )
 
 
 class NetworkEvaluator(EventEvaluator):
@@ -143,6 +154,7 @@ class NetworkEvaluator(EventEvaluator):
     def __init__(
         self,
         name,
+        should_save: bool = True,
         bands=["C", "S", "L", "E"],
         filename="net.evaluations",
         header=None,
@@ -163,6 +175,7 @@ class NetworkEvaluator(EventEvaluator):
         super().__init__(
             name + filename,
             header,
+            should_save=should_save,
             info_keywords=list(self.metrics.keys()) + info_keywords,
             override_existing=override_existing,
         )

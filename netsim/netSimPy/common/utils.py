@@ -76,8 +76,8 @@ def get_available_blocks(
 def sample_PPO_params(trial: optuna.Trial) -> Dict[str, Any]:
     """Sampler for PPO hyperparameters."""
     learning_rate = trial.suggest_float("learning_rate", 0.0001, 0.001, step=0.0001)
-    gamma = round(trial.suggest_float("gamma", 0.92, 0.98, step=0.01), 4)
-    n_steps = 2 ** trial.suggest_int("n_steps", 6, 9, step=1)
+    gamma = round(trial.suggest_float("gamma", 0.92, 0.99, step=0.01), 4)
+    n_steps = 2 ** trial.suggest_int("n_steps", 6, 12, step=1)
     # batch_size = 2 ** trial.suggest_int("exponent_batch_size", 8, 12, True)
     n_epochs = trial.suggest_int("n_epochs", 10, 30, step=1)
     # max_grad_norm = trial.suggest_float("max_grad_norm", 2.4, 3.0, log=True)
