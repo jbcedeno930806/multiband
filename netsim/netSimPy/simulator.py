@@ -85,8 +85,7 @@ class NetworkSimulator(EventSimulator):
         return False
 
     def _on_departure_event(self, event):
-        connection = self.network.getConnection(event.id)
-        self.network.deallocate(connection)
+        self.network.deallocate(event.id)
 
     def reset(self):
         self.network.restart()
@@ -105,4 +104,4 @@ class NetworkSimulator(EventSimulator):
         self.allocator = custom_allocator
 
     def getNetwork(self):
-        return self.__network
+        return self.network

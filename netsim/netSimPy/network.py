@@ -51,7 +51,7 @@ class Network:
         self.__srcVariable = UniformVariable(self.__seed, self.getNodesCount())
         self.__dstVariable = UniformVariable(self.__seed - 1, self.getNodesCount())
         self.__bitRateVariable = UniformVariable(self.__seed, len(self.__bitRates))
-        self.__connections: Dict[int, Connection] = {}
+        self.__connections: Dict[int, list[Connection]] = {}
 
     def restart(self):
         self.resetLinks()
@@ -113,21 +113,24 @@ class Network:
             )
         self.addConnection(con)
 
-    def deallocate(self, con: Connection):
-        for linkID in con.getConnectionInfo().keys():
-            linkSlots = con.getLinkSlots(linkID)
-            self.unUseSlots(
-                linkID,
-                linkSlots,
-                con.getBand(linkID),
-            )
-        self.removeConnection(con)
+    def deallocate(self, eventID: Event):
+        for con in self.__connections[eventID]:
+            for linkID in con.getConnectionInfo().keys():
+                linkSlots = con.getLinkSlots(linkID)
+                self.unUseSlots(
+                    linkID,
+                    linkSlots,
+                    con.getBand(linkID),
+                )
+            self.removeConnection(con)
 
     def addConnection(self, connection: Connection):
-        self.__connections[connection.eventID] = connection
+        if connection.eventID not in self.__connections:
+            self.__connections[connection.eventID] = []
+        self.__connections[connection.eventID].append(connection)
 
     def removeConnection(self, connection: Connection):
-        del self.__connections[connection.eventID]
+        self.__connections[connection.eventID].remove(connection)
 
     def useSlots(self, linkID: str, slotsIndexes: List[int], bandSelected="NoBand"):
         self.__links[linkID].setSlots(slotsIndexes, True, bandSelected)
@@ -141,12 +144,12 @@ class Network:
     def getAllConnections(self):
         return self.__connections
 
-    def getConnection(self, connectionID: int):
-        if connectionID in self.__connections:
-            return self.__connections[connectionID]
+    def getConnections(self, eventID: int):
+        if eventID in self.__connections:
+            return self.__connections[eventID]
         else:
             raise KeyError(
-                f"ConnectionID: {connectionID} not found in the list of connections"
+                f"ConnectionID: {eventID} not found in the list of connections"
             )
 
     def getBands(self):
