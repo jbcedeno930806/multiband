@@ -15,7 +15,7 @@ spaces = 3
 topology = "nsfnet"
 routes_output_name = "routes"
 network_output_name = "network"
-output_dir = f"./scripts/results/{topology}/"
+output_dir = f"./scripts/results_5routes/{topology}/"
 Path(output_dir).mkdir(parents=True, exist_ok=True)
 
 bands_info = {"C": 344, "L": 480, "S": 760, "E": 1136}
@@ -31,9 +31,8 @@ def main():
     counter = 0
 
     routes = []
-    total_routes = 3
+    total_routes = 5
     weight: WeightType = WeightType.LENGTH
-    print(weight.value)
 
     with open(network_filename) as f:
         file = f.readlines()

@@ -122,8 +122,10 @@ class SimpleEvaluator(EventEvaluator):
         should_save: bool = False,
         info_keywords: Tuple[str] = [],
         override_existing: bool = True,
+        with_protection=False,
     ):
         self.metrics = {self.STEPS: 0, self.BLOCKED_EVENTS: 0}
+        self.with_protection = with_protection
         super().__init__(
             filename,
             header,
@@ -133,10 +135,19 @@ class SimpleEvaluator(EventEvaluator):
         )
 
     def _on_update(self, args):
-        event: Event = args["event"]
-        if event.getType() != EventType.Departure:
-            self.metrics["blockedEvents"] += 1
         self.metrics["steps"] = args["steps"]
+        event: Event = args["event"]
+        if self.with_protection:
+            if event.getType() == EventType.Departure:
+                con: Connection = args["connection"]
+                if not con.protected:
+                    self.metrics["blockedEvents"] += 1
+            else:
+                self.metrics["blockedEvents"] += 2
+        else:
+            if event.getType() != EventType.Departure:
+                self.metrics["blockedEvents"] += 1
+
         # return self.metrics
 
     def _on_run_end(self, args):

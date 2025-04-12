@@ -1,20 +1,17 @@
-import gymnasium as gym
-from gymnasium.spaces import MultiBinary
 import numpy as np
 
 # local imports:
 from ...netSimPy.network import AllocationResult
 from ...netSimPy import NetworkSimulator, Connection, Network, Link
-from ...netSimPy.common.utils import pairwise, get_available_blocks
-from ..envs.rmsa_env import RMSA_ENV
+from ...netSimPy.common.allocators import sap_ff
+from ..envs.rmsa_env_large import RMSA_ENV_LARGE
+from ...netSimPy.common.utils import get_shared_link, pairwise, get_available_blocks
 
 # types:
-from typing import List, Tuple, Union, Callable
+from typing import Tuple, Union, Callable, List
 
 
-class SMSA_ENV(RMSA_ENV):
-    __shape = None
-
+class S_RMSA_ENV(RMSA_ENV_LARGE):
     def __init__(
         self,
         simulator: NetworkSimulator,
@@ -29,51 +26,142 @@ class SMSA_ENV(RMSA_ENV):
             None,
         ] = None,
     ):
-        super().__init__(simulator, episode_length, allocator)
-        self.j = j
-        self.n_paths = n_paths
-        numberOfNodes = self.simulator.network.getNodesCount()
-        self.__shape = 2 * numberOfNodes + self.n_paths * (self.j * 2 + 3)
-        self.observation_space = MultiBinary(self.__shape)
-        self.action_space_len = self.n_paths * self.j
-        self.action_space = gym.spaces.Discrete(self.action_space_len)
+        super().__init__(simulator, episode_length, j, n_paths, allocator)
+        self.sap_allocator = sap_ff(self.n_paths, ["C"])
+        self.routeIndexSelected = None
 
     def _state(self, connection: Connection):
         network = self.simulator.network
         numberOfNodes = network.getNodesCount()
-
-        # asignar antes que todo la ruta principal calculada con first fit:
-
-        # Source state
         src = connection.src
         dst = connection.dst
+
+        # asignar la ruta principal usando sap_ff!!:
+        route_con = Connection(connection.eventID, src, dst, connection.bitRate)
+        status, c = self.sap_allocator(route_con, network, 0)
+        if status != AllocationResult.Allocated:
+            return super()._state(connection)
+        c.protected = True  # Se usa esta variable para indicar que fue asignada
+        self.simulator.getNetwork().addConnection(c)
+        self.routeIndexSelected = c.routeIndex
+        # Componer el nuevo estado del agente:
         srcState = np.zeros(numberOfNodes)
         dstState = np.zeros(numberOfNodes)
         srcState[src] = 1
         dstState[dst] = 1
-        lengths = network.lengths
-        paths = network.paths[src, dst]
 
-        routesState = np.full((self.n_paths, self.j * 2 + 3), fill_value=-1)
-        for idp, path in enumerate(paths[: self.n_paths]):
+        state = super()._state(connection)
+        slotsOfBand = network.getCapacityOfBand("C")
+        start = 2 * self.simulator.network.getNodesCount()
+        state[start : start + c.routeIndex * slotsOfBand] = (
+            [-1] * c.routeIndex * slotsOfBand
+        )
+        return state
+
+    def get_available_routes(
+        self,
+        c: Connection,
+        network: Network,
+    ):
+        lengths = network.lengths
+        paths = network.paths
+        band = "C"
+        a_routes = []
+        for idp, path in enumerate(paths[c.src, c.dst][:3]):
             linksOfPath: List[Link] = [
                 network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
             ]
-            bestModulation = connection.bitRate.getBestModulationByBand(
-                linksOfPath, lengths[src, dst][idp], "C"
+            bestModulation = c.bitRate.getBestModulationByBand(
+                linksOfPath, lengths[c.src, c.dst][idp], band
             )
-            demand = bestModulation["slots"]
-            _indexes, _lengths = get_available_blocks(demand, linksOfPath, "C")
-            for i in range(min(self.j, len(_indexes))):
-                routesState[idp, 2 * i] = _indexes[i]
-                routesState[idp, 2 * i + 1] = _lengths[i]
-            routesState[idp, 2 * self.j] = demand
-            routesState[idp, 2 * self.j + 1] = (
-                self.simulator.network.getRouteAvailibility(linksOfPath, "C")
+            if bestModulation is None:
+                continue
+            numberOfSlots = bestModulation["slots"]
+            indexes, _ = get_available_blocks(
+                numberOfSlots,
+                linksOfPath,
+                band,
             )
-            if len(_lengths) > 0:
-                routesState[idp, 2 * self.j + 2] = sum(_lengths) / len(_lengths)
-        _state = routesState.reshape(self.n_paths * (self.j * 2 + 3))
-        return np.concatenate(
-            (srcState, dstState, _state),
+            if len(indexes) > 0:
+                a_routes.append(idp)
+        return a_routes
+
+    # def _allocator(
+    #     self,
+    #     c: Connection,
+    #     network: Network,
+    #     action: int,
+    # ) -> Tuple[AllocationResult, Connection]:
+    #     idx_path, _ = self.decode_action(action)
+    #     if self.routeIndexSelected is None or idx_path <= self.routeIndexSelected:
+    #         return AllocationResult.Not_Allocated, c
+    #     if c.protected:
+    #         raise ValueError("esta conexion no debería venir asignada")
+    #     self.routeIndexSelected = None
+    #     return super()._allocator(c, network, action)
+
+    def _allocator(
+        self,
+        c: Connection,
+        network: Network,
+        action: int,
+    ) -> Tuple[AllocationResult, Connection]:
+        idx_block = 0
+        lengths = network.lengths
+        paths = self.get_available_routes(c, network)
+
+        if self.routeIndexSelected is None:
+            if len(paths) > 0:
+                raise ValueError(
+                    "Si no se pudo asignar una ruta principal, es porque no hubo disponiilidad, y no debería haber paths disponibles"
+                )
+            self.routeIndexSelected = None
+            return AllocationResult.Not_Allocated, c
+
+        self.routeIndexSelected = None
+
+        if len(paths) <= action or len(paths) == 0:
+            return AllocationResult.Not_Allocated, c
+
+        idx_path = paths[action]
+
+        selected_path = network.paths[c.src, c.dst][idx_path]
+        linksOfPath: List[Link] = [
+            network.links[f"{src}-{dst}"] for src, dst in pairwise(selected_path)
+        ]
+
+        bestModulation = c.bitRate.getBestModulationByBand(
+            linksOfPath, lengths[c.src, c.dst][idx_path], "C"
         )
+        numberOfSlots = bestModulation["slots"]
+        initial_indices, _lengths = get_available_blocks(
+            numberOfSlots,
+            linksOfPath,
+            "C",
+        )
+        if len(initial_indices) > idx_block:
+            ff_index = initial_indices[idx_block]
+            for link in linksOfPath:
+                c.addLinkInfo(
+                    link.id,
+                    fromSlot=ff_index,
+                    toSlot=ff_index + numberOfSlots,
+                    band="C",
+                    modulation=bestModulation,
+                )
+            self.routeIndexSelected = None
+            return AllocationResult.Allocated, c
+        self.routeIndexSelected = None
+        return AllocationResult.Not_Allocated, c
+
+    def reward(self, result: AllocationResult, connection: Connection):
+        # if connection.routeIndex == 0:
+        #     raise ValueError(
+        #         "Error, el indice no deberia ser cero porque esta
+        #           es la de la ruta principal"
+        #     )
+        if result == AllocationResult.Allocated:
+            return 1
+        elif connection.protected:
+            return 0
+        return -1

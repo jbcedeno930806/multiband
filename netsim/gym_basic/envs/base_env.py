@@ -40,14 +40,14 @@ class BASE_ENV(gym.Env, ABC):
             self.simulator.network.allocate(con)
             self.event.setType(EventType.Departure)
             self.simulator.eventsGenerator.appendEvent(self.event)
-        reward = self.reward(result)
+        reward = self.reward(result, con)
         done = self.done()
         info = {}
         state = self.state()
         truncated = False
         return state, reward, done, truncated, info
 
-    def reward(self, result: AllocationResult):
+    def reward(self, result: AllocationResult, con: Connection):
         if result == AllocationResult.Allocated:
             episode_reward = 1
         else:

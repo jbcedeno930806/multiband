@@ -122,7 +122,7 @@ class Network:
                     linkSlots,
                     con.getBand(linkID),
                 )
-            self.removeConnection(con)
+        del self.__connections[eventID]
 
     def addConnection(self, connection: Connection):
         if connection.eventID not in self.__connections:
@@ -144,7 +144,7 @@ class Network:
     def getAllConnections(self):
         return self.__connections
 
-    def getConnections(self, eventID: int):
+    def getConnections(self, eventID: str):
         if eventID in self.__connections:
             return self.__connections[eventID]
         else:

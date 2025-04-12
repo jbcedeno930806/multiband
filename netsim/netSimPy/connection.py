@@ -18,6 +18,7 @@ class Connection:
         self.bitRate = bitRate
         self.routeIndex: Union[int, None] = None
         self.__connection: Dict[str, LinkDetails] = {}
+        self._protected = False
 
     def addLinkInfo(
         self, linkID: str, slots: list, band: str = "NoBand", modulation="Unset"
@@ -71,3 +72,11 @@ class Connection:
 
     def getModulationName(self, linkID: str):
         return self.__connection[linkID]["modulation"]["name"]
+
+    @property
+    def protected(self):
+        return self._protected
+
+    @protected.setter
+    def protected(self, status: bool):
+        self._protected = status

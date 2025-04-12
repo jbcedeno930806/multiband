@@ -13,6 +13,16 @@ register(
 )
 
 register(
+    id="RMSA_ENV_LARGE-v0",
+    entry_point="netsim.gym_basic.envs:RMSA_ENV_LARGE",
+)
+
+register(
+    id="S_RMSA_ENV-v0",
+    entry_point="netsim.gym_basic.envs:S_RMSA_ENV",
+)
+
+register(
     id="ROUTING_ENV-v0",
     entry_point="netsim.gym_basic.envs:ROUTING_ENV",
 )

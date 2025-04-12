@@ -6,13 +6,13 @@ import numpy as np
 from ...netSimPy.network import AllocationResult
 from ...netSimPy import NetworkSimulator, Connection, Network, Link
 from ...netSimPy.common.utils import get_shared_link, pairwise, get_available_blocks
-from ..envs.base_env import BASE_ENV
+from .base_env import BASE_ENV
 
 # types:
 from typing import List, Tuple, Union, Callable
 
 
-class RMSA_ENV(BASE_ENV):
+class RMSA_ENV_LARGE(BASE_ENV):
     __shape = None
 
     def __init__(
@@ -56,7 +56,7 @@ class RMSA_ENV(BASE_ENV):
 
         paths = network.paths[src, dst]
         slotsOfBand = network.getCapacityOfBand("C")
-        linksState = np.zeros((self.n_paths, slotsOfBand))
+        linksState = np.full((self.n_paths, slotsOfBand), fill_value=-1)
         # allDemands = np.array([1, 2, 3, 4, 6, 7, 8, 11, 14, 16, 20, 27, 32, 40, 80])
         demandState = np.full((self.n_paths, len(self.allDemands)), fill_value=0)
         for idp, path in enumerate(paths[: self.n_paths]):
@@ -64,7 +64,7 @@ class RMSA_ENV(BASE_ENV):
                 network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
             ]
             linksState[idp] = [
-                1 if slot is True else 0
+                1 if slot is True else -1
                 for slot in get_shared_link(linksOfPath, band="C")
             ]
             bestModulation = connection.bitRate.getBestModulationByBand(
@@ -78,7 +78,7 @@ class RMSA_ENV(BASE_ENV):
                 raise ValueError("Invalid demand used for connection request")
             demandState[idp, demandPos] = 1
 
-        linksState = linksState.reshape(self.n_paths * 344)
+        linksState = linksState.reshape(self.n_paths * slotsOfBand)
         demandState = demandState.reshape(self.n_paths * len(self.allDemands))
         return np.concatenate(
             (srcState, dstState, linksState, demandState),

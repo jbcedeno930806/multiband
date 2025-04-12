@@ -24,7 +24,9 @@ def sap_ff(n_paths=3, bands: Optional[List[str]] = None):
         lengths = network.lengths
         analyzed_bands = bands if bands is not None else network.getBands()
         for band in analyzed_bands:
-            for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
+            for idp, path in enumerate(
+                paths[c.src, c.dst][: min(n_paths, len(paths[c.src, c.dst]))]
+            ):
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]
@@ -51,6 +53,62 @@ def sap_ff(n_paths=3, bands: Optional[List[str]] = None):
         return AllocationResult.Not_Allocated, c
 
     return sap_ff_func
+
+
+def protected_sap_ff(n_paths=5, bands: Optional[List[str]] = None):
+    sap_allocator = sap_ff(n_paths, bands)
+
+    def protected_sap_ff_func(c: Connection, network: Network, action: int = 0):
+        # crear copia de la conexión:
+        route_con = Connection(c.eventID, c.src, c.dst, c.bitRate)
+
+        # asignar la conexión principal usando sap_ff!!:
+        status, c = sap_allocator(c, network, 0)
+        if status != AllocationResult.Allocated:
+            return AllocationResult.Not_Allocated, c
+        network.addConnection(c)
+
+        # asignar la conexión de protección usando sap_ff en ruta alterna!!:
+        block = 0
+        paths = network.paths
+        lengths = network.lengths
+        analyzed_bands = bands if bands is not None else network.getBands()
+        for band in analyzed_bands:
+            for idp, path in enumerate(
+                paths[route_con.src, route_con.dst][
+                    : min(n_paths, len(paths[route_con.src, route_con.dst]))
+                ]
+            ):
+                if idp <= c.routeIndex:
+                    continue  # asegurar ruta diferente!!
+                linksOfPath: List[Link] = [
+                    network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
+                ]
+                bestModulation = route_con.bitRate.getBestModulationByBand(
+                    linksOfPath, lengths[route_con.src, route_con.dst][idp], band
+                )
+                if bestModulation is None:
+                    continue
+                numberOfSlots = bestModulation["slots"]
+                indexes, _ = get_available_blocks(
+                    numberOfSlots, linksOfPath, band, block + 1
+                )
+                if len(indexes) > 0:
+                    route_con.addRouteIndex(idp)
+                    for link in linksOfPath:
+                        route_con.addLinkInfo(
+                            link.id,
+                            fromSlot=indexes[0],
+                            toSlot=indexes[0] + numberOfSlots,
+                            band=band,
+                            modulation=bestModulation,
+                        )
+                    c.protected = True
+                    return AllocationResult.Allocated, c
+
+        return AllocationResult.Allocated, c
+
+    return protected_sap_ff_func
 
 
 def sap_ff2(n_paths=3):
@@ -101,7 +159,7 @@ def sap_ff2(n_paths=3):
     return sap_ff_func
 
 
-# TODO: Corregir, dado que ladisponibilidad de la bando no tiene en cuenta
+# TODO: Corregir, dado que la disponibilidad de la bando no tiene en cuenta
 # las distintas rutas, esto ahora mucho cálculo
 def most_available_band_all_routes(n_paths=3):
     def mabar(c: Connection, network: Network, action: int = 0):
@@ -535,7 +593,7 @@ def route_fragmentation_porcentage(
 def alphaBalancing(
     n_paths=3, alphas=[0.5, 1], bandsOrders=[["C", "L", "S", "E"], ["E", "S", "L", "C"]]
 ):
-
+    # alpha de 0.8 significa que la banda se puede ocupar hasta un 80% de su capacidad:
     def abpa(c: Connection, network: Network, action: int = 0):
         paths = network.paths
         lengths = network.lengths
@@ -550,17 +608,22 @@ def alphaBalancing(
                     )
                     if bestModulation is not None:
                         if alpha == 1:
-                            candAllocate = True
+                            canAllocate = True
                         else:
-                            bandOccupancy = network.getCapacityOfBand(band) * len(
+                            # ocupación de la banda considerando disponibilidad
+                            # de la ruta ponderada:
+                            bandOccupancy = network.getCapacityOfBand(
+                                band
+                            ) - network.getRouteAvailibility(linksOfPath, band) / len(
                                 linksOfPath
-                            ) - network.getRouteAvailibility(linksOfPath, band)
-                            candAllocate = bandOccupancy + bestModulation[
-                                "slots"
-                            ] <= network.getCapacityOfBand(band) * len(linksOfPath) * (
-                                1 - alpha
                             )
-                        if candAllocate is True:
+                            # alpha de 0.8 significa que la banda se puede ocupar
+                            # hasta un 80% de su capacidad
+                            canAllocate = (
+                                bandOccupancy + bestModulation["slots"]
+                                <= network.getCapacityOfBand(band) * alpha
+                            )
+                        if canAllocate is True:
                             shared_link = get_shared_link(linksOfPath, band)
                             index = _ff(shared_link, bestModulation["slots"])
                             if index != -1:
