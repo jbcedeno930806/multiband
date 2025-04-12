@@ -159,72 +159,6 @@ def sap_ff2(n_paths=3):
     return sap_ff_func
 
 
-# TODO: Corregir, dado que la disponibilidad de la bando no tiene en cuenta
-# las distintas rutas, esto ahora mucho cálculo
-def most_available_band_all_routes(n_paths=3):
-    def mabar(c: Connection, network: Network, action: int = 0):
-        """Este algoritmo prioriza la banda más dispobible e intenta asignar en
-        alguna de las rutas posibles, luego la segunda banda más disponible e
-        intenta asignar usando las rutas posibles, y así sucesivamente.
-
-        Args:
-            c (Connection): _description_
-            paths (list[List[List[List[Link]]]]): Esta variable contiene una lista de
-            rutas de la forma: ruta(index) = paths[src, dst][index],
-            cada ruta contiene una lista de id de enlaces.
-            network (Network): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        paths = network.paths
-        lengths = network.lengths
-        allocationInfo = []
-
-        for band in network.getBands():
-            for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
-                linksOfPath: List[Link] = [
-                    network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
-                ]
-                bestModulation = c.bitRate.getBestModulationByBand(
-                    linksOfPath, lengths[c.src, c.dst][idp], band
-                )
-                if bestModulation is not None:
-                    allocationInfo.append(
-                        {
-                            "numberOfSlots": bestModulation["slots"],
-                            "band": band,
-                            "linksOfPath": linksOfPath,
-                            "availibility": network.getBandAvailibility(band),
-                            "idp": idp,
-                            "modulation": bestModulation,
-                        }
-                    )
-        sortedList = sorted(
-            allocationInfo, key=lambda x: (-x["availibility"], x["numberOfSlots"])
-        )
-
-        for info in sortedList:
-            shared_link = get_shared_link(info["linksOfPath"], info["band"])
-            index = _ff(shared_link, info["numberOfSlots"])
-            if index != -1:
-                c.addRouteIndex(info["idp"])
-                for link in info["linksOfPath"]:
-                    c.addLinkInfo(
-                        link.id,
-                        fromSlot=index,
-                        toSlot=index + info["numberOfSlots"],
-                        band=info["band"],
-                        modulation=info["modulation"],
-                    )
-                return AllocationResult.Allocated, c
-        return AllocationResult.Not_Allocated, c
-
-    return mabar
-
-
-# TODO: Esto estaría malo, la ruta más disponible estaría priorizando la ruta
-# más larga por como se esta calculando la disponibilidad
 def most_available_route(n_paths=3):
     def mar(c: Connection, network: Network, action: int = 0):
         """Este algoritmo prioriza la banda más dispobible e intenta asignar en
@@ -256,12 +190,13 @@ def most_available_route(n_paths=3):
                 if bestModulation is not None:
                     allocationInfo.append(
                         {
-                            "numberOfSlots": bestModulation["slots"],
+                            "numberOfSlots": bestModulation["slots"] * len(linksOfPath),
                             "band": band,
                             "linksOfPath": linksOfPath,
                             "availibility": network.getRouteAvailibility(
                                 linksOfPath, band
-                            ),
+                            )
+                            / len(linksOfPath),
                             "idp": idp,
                             "modulation": bestModulation,
                         }
@@ -290,9 +225,8 @@ def most_available_route(n_paths=3):
 
 
 # TODO Probar primero este algoritmo:
-# TODO: Calcula r la disponibilidad ponderando la disponibilidad de la ruta
-def shortest_route_most_available_band(n_paths=3):
-    def srmab(c: Connection, network: Network, action: int = 0):
+def shortest_route_most_available_route(n_paths=3):
+    def srmar(c: Connection, network: Network, action: int = 0):
         """Este algoritmo prioriza la ruta más corta y selecciona la banda más disponible,
         luego la segunda ruta más corta y la banda más disponible, y así sucesivamente
 
@@ -321,10 +255,13 @@ def shortest_route_most_available_band(n_paths=3):
                 if bestModulation is not None:
                     allocationInfo.append(
                         {
-                            "numberOfSlots": bestModulation["slots"],
+                            "numberOfSlots": bestModulation["slots"] * len(linksOfPath),
                             "band": band,
                             "linksOfPath": linksOfPath,
-                            "availibility": network.getBandAvailibility(band),
+                            "availibility": network.getRouteAvailibility(
+                                linksOfPath, band
+                            )
+                            / len(linksOfPath),
                             "idp": idp,
                             "modulation": bestModulation,
                         }
@@ -347,7 +284,7 @@ def shortest_route_most_available_band(n_paths=3):
                 return AllocationResult.Allocated, c
         return AllocationResult.Not_Allocated, c
 
-    return srmab
+    return srmar
 
 
 class Variant(enum.Enum):
@@ -355,13 +292,12 @@ class Variant(enum.Enum):
     Greater_Fragmentation = "Greater_Fragmentation"
 
 
-# Se prioriza la banda menos/más fragmentada y se escogen las rutas de la más
+# Se prioriza la ruta menos/más fragmentada y se escogen las rutas de la más
 # corta a la más larga
-# TODO: se debe calcular en funcion de la fragmentación ponderada de la ruta
-def least_fragmentation_band_prioritization(
-    n_paths=3, variant: Variant = Variant.Greater_Fragmentation
+def route_fragmentation_prioritization(
+    n_paths=3, variant: Variant = Variant.Least_Fragmentation
 ):
-    def lfbp(c: Connection, network: Network, action: int = 0):
+    def rfp(c: Connection, network: Network, action: int = 0):
         """Este algoritmo prioriza la banda con menor/mayor fragmentación e intenta
         asignar usando todas las rutas de la más corta a la más larga
 
@@ -390,10 +326,11 @@ def least_fragmentation_band_prioritization(
                 if bestModulation is not None:
                     allocationInfo.append(
                         {
-                            "numberOfSlots": bestModulation["slots"],
+                            "numberOfSlots": bestModulation["slots"] * len(linksOfPath),
                             "band": band,
                             "linksOfPath": linksOfPath,
-                            "fragmentation": network.getBandFragmentation(band),
+                            "fragmentation": network.getRouteFragmentation(band)
+                            / len(linksOfPath),
                             "idp": idp,
                             "modulation": bestModulation,
                         }
@@ -420,123 +357,12 @@ def least_fragmentation_band_prioritization(
                 return AllocationResult.Allocated, c
         return AllocationResult.Not_Allocated, c
 
-    return lfbp
-
-
-# Aqui se prioriza el porcentage de la fragmentación, y luego se escoge
-# la ruta de menor a mayor
-# TODO: Corregir para considerar la fragmentación ponderada de los enlaces de la ruta
-def band_fragmentation_porcentage(
-    n_paths=3, variant: Variant = Variant.Greater_Fragmentation
-):
-    def bfp(c: Connection, network: Network, action: int = 0):
-        paths = network.paths
-        lengths = network.lengths
-        allocationInfo = []
-
-        for band in network.getBands():
-            for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
-                linksOfPath: List[Link] = [
-                    network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
-                ]
-                bestModulation = c.bitRate.getBestModulationByBand(
-                    linksOfPath, lengths[c.src, c.dst][idp], band
-                )
-                if bestModulation is not None:
-                    allocationInfo.append(
-                        {
-                            "numberOfSlots": bestModulation["slots"],
-                            "band": band,
-                            "linksOfPath": linksOfPath,
-                            "fragmentation": network.getBandFragmentation(band)
-                            / network.getCapacityOfBand(band),
-                            "idp": idp,
-                            "modulation": bestModulation,
-                        }
-                    )
-        if variant is Variant.Least_Fragmentation:
-            callback = lambda x: (x["fragmentation"], x["numberOfSlots"])
-        else:
-            callback = lambda x: (-x["fragmentation"], x["numberOfSlots"])
-        sortedList = sorted(allocationInfo, key=callback)
-
-        for info in sortedList:
-            shared_link = get_shared_link(info["linksOfPath"], info["band"])
-            index = _ff(shared_link, info["numberOfSlots"])
-            if index != -1:
-                c.addRouteIndex(info["idp"])
-                for link in info["linksOfPath"]:
-                    c.addLinkInfo(
-                        link.id,
-                        fromSlot=index,
-                        toSlot=index + info["numberOfSlots"],
-                        band=info["band"],
-                        modulation=info["modulation"],
-                    )
-                return AllocationResult.Allocated, c
-        return AllocationResult.Not_Allocated, c
-
-    return bfp
-
-
-# TODO: Corregir para considerar la fragmentación ponderada de los enlaces de la ruta
-def route_fragmentation(n_paths=3, variant: Variant = Variant.Greater_Fragmentation):
-    def rf(c: Connection, network: Network, action: int = 0):
-        paths = network.paths
-        lengths = network.lengths
-        allocationInfo = []
-
-        for band in network.getBands():
-            for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
-                linksOfPath: List[Link] = [
-                    network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
-                ]
-                bestModulation = c.bitRate.getBestModulationByBand(
-                    linksOfPath, lengths[c.src, c.dst][idp], band
-                )
-                if bestModulation is not None:
-                    allocationInfo.append(
-                        {
-                            "numberOfSlots": bestModulation["slots"],
-                            "band": band,
-                            "linksOfPath": linksOfPath,
-                            "fragmentation": network.getRouteFragmentation(
-                                linksOfPath, band
-                            ),
-                            "idp": idp,
-                            "modulation": bestModulation,
-                        }
-                    )
-        if variant is Variant.Least_Fragmentation:
-            callback = lambda x: (x["fragmentation"], x["numberOfSlots"])
-        else:
-            callback = lambda x: (-x["fragmentation"], x["numberOfSlots"])
-        sortedList = sorted(allocationInfo, key=callback)
-
-        for info in sortedList:
-            shared_link = get_shared_link(info["linksOfPath"], info["band"])
-            index = _ff(shared_link, info["numberOfSlots"])
-            if index != -1:
-                c.addRouteIndex(info["idp"])
-                for link in info["linksOfPath"]:
-                    c.addLinkInfo(
-                        link.id,
-                        fromSlot=index,
-                        toSlot=index + info["numberOfSlots"],
-                        band=info["band"],
-                        modulation=info["modulation"],
-                    )
-                return AllocationResult.Allocated, c
-        return AllocationResult.Not_Allocated, c
-
-    return rf
+    return rfp
 
 
 # TODO Luego probar este:
-# TODO: Corregir para considerar la fragmentación ponderada de los enlaces de la ruta
-# Corregir para priorizar las primeras rutas menos fragmentadas
 def route_fragmentation_porcentage(
-    n_paths=3, variant: Variant = Variant.Greater_Fragmentation
+    n_paths=3, variant: Variant = Variant.Least_Fragmentation
 ):
     def rfp(c: Connection, network: Network, action: int = 0):
         paths = network.paths
@@ -554,11 +380,12 @@ def route_fragmentation_porcentage(
                 if bestModulation is not None:
                     allocationInfo.append(
                         {
-                            "numberOfSlots": bestModulation["slots"],
+                            "numberOfSlots": bestModulation["slots"] * len(linksOfPath),
                             "band": band,
                             "linksOfPath": linksOfPath,
-                            "fragmentation": network.getRouteFragmentation(
-                                linksOfPath, band
+                            "fragmentation": (
+                                network.getRouteFragmentation(linksOfPath, band)
+                                / len(linksOfPath)
                             )
                             / network.getCapacityOfBand(band),
                             "idp": idp,
