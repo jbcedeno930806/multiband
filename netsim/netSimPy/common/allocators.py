@@ -159,6 +159,141 @@ def sap_ff2(n_paths=3):
     return sap_ff_func
 
 
+def least_demand(n_paths=3):
+    def ld(c: Connection, network: Network, action: int = 0):
+        """Este algoritmo prioriza la banda más dispobible e intenta asignar en
+        alguna de las rutas posibles, luego la segunda banda más disponible e
+        intenta asignar usando las rutas posibles, y así sucesivamente.
+
+        Args:
+            c (Connection): _description_
+            paths (list[List[List[List[Link]]]]): Esta variable contiene una lista de
+            rutas de la forma: ruta(index) = paths[src, dst][index],
+            cada ruta contiene una lista de id de enlaces.
+            network (Network): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        paths = network.paths
+        lengths = network.lengths
+        allocationInfo = []
+
+        for band in network.getBands():
+            for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
+                linksOfPath: List[Link] = [
+                    network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
+                ]
+                bestModulation = c.bitRate.getBestModulationByBand(
+                    linksOfPath, lengths[c.src, c.dst][idp], band
+                )
+                if bestModulation is not None:
+                    allocationInfo.append(
+                        {
+                            "numberOfSlots": bestModulation["slots"],
+                            "band": band,
+                            "linksOfPath": linksOfPath,
+                            "availibility": (
+                                network.getRouteAvailibility(linksOfPath, band)
+                                / len(linksOfPath)
+                            )
+                            / network.getCapacityOfBand(band),
+                            "idp": idp,
+                            "modulation": bestModulation,
+                        }
+                    )
+        sortedList = sorted(
+            allocationInfo, key=lambda x: (-x["numberOfSlots"] * len(linksOfPath))
+        )
+
+        for info in sortedList:
+            shared_link = get_shared_link(info["linksOfPath"], info["band"])
+            index = _ff(shared_link, info["numberOfSlots"])
+            if index != -1:
+                c.addRouteIndex(info["idp"])
+                for link in info["linksOfPath"]:
+                    c.addLinkInfo(
+                        link.id,
+                        fromSlot=index,
+                        toSlot=index + info["numberOfSlots"],
+                        band=info["band"],
+                        modulation=info["modulation"],
+                    )
+                return AllocationResult.Allocated, c
+        return AllocationResult.Not_Allocated, c
+
+    return ld
+
+
+def least_demand_percentage(n_paths=3):
+    def ldp(c: Connection, network: Network, action: int = 0):
+        """Este algoritmo prioriza la banda más dispobible e intenta asignar en
+        alguna de las rutas posibles, luego la segunda banda más disponible e
+        intenta asignar usando las rutas posibles, y así sucesivamente.
+
+        Args:
+            c (Connection): _description_
+            paths (list[List[List[List[Link]]]]): Esta variable contiene una lista de
+            rutas de la forma: ruta(index) = paths[src, dst][index],
+            cada ruta contiene una lista de id de enlaces.
+            network (Network): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        paths = network.paths
+        lengths = network.lengths
+        allocationInfo = []
+
+        for band in network.getBands():
+            for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
+                linksOfPath: List[Link] = [
+                    network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
+                ]
+                bestModulation = c.bitRate.getBestModulationByBand(
+                    linksOfPath, lengths[c.src, c.dst][idp], band
+                )
+                if bestModulation is not None:
+                    allocationInfo.append(
+                        {
+                            "numberOfSlots": bestModulation["slots"],
+                            "band": band,
+                            "linksOfPath": linksOfPath,
+                            "availibility": (
+                                network.getRouteAvailibility(linksOfPath, band)
+                                / len(linksOfPath)
+                            )
+                            / network.getCapacityOfBand(band),
+                            "idp": idp,
+                            "modulation": bestModulation,
+                        }
+                    )
+        sortedList = sorted(
+            allocationInfo,
+            key=lambda x: (
+                -x["numberOfSlots"] * len(linksOfPath) / network.getCapacityOfBand(band)
+            ),
+        )
+
+        for info in sortedList:
+            shared_link = get_shared_link(info["linksOfPath"], info["band"])
+            index = _ff(shared_link, info["numberOfSlots"])
+            if index != -1:
+                c.addRouteIndex(info["idp"])
+                for link in info["linksOfPath"]:
+                    c.addLinkInfo(
+                        link.id,
+                        fromSlot=index,
+                        toSlot=index + info["numberOfSlots"],
+                        band=info["band"],
+                        modulation=info["modulation"],
+                    )
+                return AllocationResult.Allocated, c
+        return AllocationResult.Not_Allocated, c
+
+    return ldp
+
+
 def most_available_route(n_paths=3):
     def mar(c: Connection, network: Network, action: int = 0):
         """Este algoritmo prioriza la banda más dispobible e intenta asignar en
@@ -190,13 +325,79 @@ def most_available_route(n_paths=3):
                 if bestModulation is not None:
                     allocationInfo.append(
                         {
-                            "numberOfSlots": bestModulation["slots"] * len(linksOfPath),
+                            "numberOfSlots": bestModulation["slots"],
                             "band": band,
                             "linksOfPath": linksOfPath,
                             "availibility": network.getRouteAvailibility(
                                 linksOfPath, band
                             )
                             / len(linksOfPath),
+                            "idp": idp,
+                            "modulation": bestModulation,
+                        }
+                    )
+        sortedList = sorted(
+            allocationInfo, key=lambda x: (-x["availibility"], x["numberOfSlots"])
+        )
+
+        for info in sortedList:
+            shared_link = get_shared_link(info["linksOfPath"], info["band"])
+            index = _ff(shared_link, info["numberOfSlots"])
+            if index != -1:
+                c.addRouteIndex(info["idp"])
+                for link in info["linksOfPath"]:
+                    c.addLinkInfo(
+                        link.id,
+                        fromSlot=index,
+                        toSlot=index + info["numberOfSlots"],
+                        band=info["band"],
+                        modulation=info["modulation"],
+                    )
+                return AllocationResult.Allocated, c
+        return AllocationResult.Not_Allocated, c
+
+    return mar
+
+
+def most_available_route_percentage(n_paths=3):
+    def mar(c: Connection, network: Network, action: int = 0):
+        """Este algoritmo prioriza la banda más dispobible e intenta asignar en
+        alguna de las rutas posibles, luego la segunda banda más disponible e
+        intenta asignar usando las rutas posibles, y así sucesivamente.
+
+        Args:
+            c (Connection): _description_
+            paths (list[List[List[List[Link]]]]): Esta variable contiene una lista de
+            rutas de la forma: ruta(index) = paths[src, dst][index],
+            cada ruta contiene una lista de id de enlaces.
+            network (Network): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        paths = network.paths
+        lengths = network.lengths
+        allocationInfo = []
+
+        for band in network.getBands():
+            for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
+                linksOfPath: List[Link] = [
+                    network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
+                ]
+                bestModulation = c.bitRate.getBestModulationByBand(
+                    linksOfPath, lengths[c.src, c.dst][idp], band
+                )
+                if bestModulation is not None:
+                    allocationInfo.append(
+                        {
+                            "numberOfSlots": bestModulation["slots"],
+                            "band": band,
+                            "linksOfPath": linksOfPath,
+                            "availibility": (
+                                network.getRouteAvailibility(linksOfPath, band)
+                                / len(linksOfPath)
+                            )
+                            / network.getCapacityOfBand(band),
                             "idp": idp,
                             "modulation": bestModulation,
                         }
@@ -255,7 +456,7 @@ def shortest_route_most_available_route(n_paths=3):
                 if bestModulation is not None:
                     allocationInfo.append(
                         {
-                            "numberOfSlots": bestModulation["slots"] * len(linksOfPath),
+                            "numberOfSlots": bestModulation["slots"],
                             "band": band,
                             "linksOfPath": linksOfPath,
                             "availibility": network.getRouteAvailibility(
@@ -380,7 +581,7 @@ def route_fragmentation_porcentage(
                 if bestModulation is not None:
                     allocationInfo.append(
                         {
-                            "numberOfSlots": bestModulation["slots"] * len(linksOfPath),
+                            "numberOfSlots": bestModulation["slots"],
                             "band": band,
                             "linksOfPath": linksOfPath,
                             "fragmentation": (
