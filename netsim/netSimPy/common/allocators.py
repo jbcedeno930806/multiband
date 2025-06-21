@@ -57,22 +57,22 @@ def sap_ff(n_paths=3, bands: Optional[List[str]] = None):
 
 def protected_sap_ff(n_paths=5, bands: Optional[List[str]] = None):
     sap_allocator = sap_ff(n_paths, bands)
+    # TODO: Corregir!!!! para que agregue el evento y la conexion a la red
 
     def protected_sap_ff_func(c: Connection, network: Network, action: int = 0):
-        # crear copia de la conexión:
-        route_con = Connection(c.eventID, c.src, c.dst, c.bitRate)
-
-        # asignar la conexión principal usando sap_ff!!:
+        # Existe disponibilidad para la conexión principal usando sap_ff??:
         status, c = sap_allocator(c, network, 0)
         if status != AllocationResult.Allocated:
+            # No existe disponibilidad:
             return AllocationResult.Not_Allocated, c
-        network.addConnection(c)
-
-        # asignar la conexión de protección usando sap_ff en ruta alterna!!:
+        network.allocate(c)
+        # Intentar asignar la conexión de respaldo usando sap_ff en ruta alterna!!:
         block = 0
         paths = network.paths
         lengths = network.lengths
         analyzed_bands = bands if bands is not None else network.getBands()
+        # crear copia de la conexión:
+        route_con = Connection(c.eventID, c.src, c.dst, c.bitRate)
         for band in analyzed_bands:
             for idp, path in enumerate(
                 paths[route_con.src, route_con.dst][
@@ -104,14 +104,59 @@ def protected_sap_ff(n_paths=5, bands: Optional[List[str]] = None):
                             modulation=bestModulation,
                         )
                     c.protected = True
-                    return AllocationResult.Allocated, c
-
-        return AllocationResult.Allocated, c
+                    return AllocationResult.Allocated, route_con
+        return AllocationResult.Allocated, route_con
 
     return protected_sap_ff_func
 
 
-def sap_ff2(n_paths=3):
+def one_plus_one():
+    def _allocate(network: Network, con: Connection, idp=0, band="C"):
+        block = 0
+        paths = network.paths[con.src, con.dst]
+        lengths = network.lengths
+
+        linksOfPath: List[Link] = [
+            network.links[f"{src}-{dst}"] for src, dst in pairwise(paths[idp])
+        ]
+        bestModulation = con.bitRate.getBestModulationByBand(
+            linksOfPath, lengths[con.src, con.dst][idp], band
+        )
+        if bestModulation is None:
+            return AllocationResult.Not_Allocated, con
+
+        numberOfSlots = bestModulation["slots"]
+        indexes, _ = get_available_blocks(numberOfSlots, linksOfPath, band, block + 1)
+        if len(indexes) > 0:
+            con.addRouteIndex(idp)
+            for link in linksOfPath:
+                con.addLinkInfo(
+                    link.id,
+                    fromSlot=indexes[0],
+                    toSlot=indexes[0] + numberOfSlots,
+                    band=band,
+                    modulation=bestModulation,
+                )
+            return AllocationResult.Allocated, con
+        return AllocationResult.Not_Allocated, con
+
+    def one_plus_one_func(c: Connection, network: Network, action: int = 0):
+        status, c = _allocate(network, c, idp=0)
+        if status == AllocationResult.Allocated:
+            network.allocate(c)
+
+        # crear copia de la conexión e intentar asignarla:
+        route_con = Connection(c.eventID, c.src, c.dst, c.bitRate)
+        status2, route_con = _allocate(network, route_con, idp=0)
+
+        if status2 == AllocationResult.Allocated or status == AllocationResult.Allocated:
+            return AllocationResult.Allocated, route_con
+        return AllocationResult.Not_Allocated, route_con
+
+    return one_plus_one_func
+
+
+def sap_ff2(n_paths=3, bands: Optional[List[str]] = None):
     def sap_ff_func(c: Connection, network: Network, action: int = 0):
         """Versión clásica del first-fit en multibanda, sin ningún cambio adicional.
         Se intenta en todas lasa rutas de la primera banda, luego todas las rutas de
@@ -129,8 +174,11 @@ def sap_ff2(n_paths=3):
         """
         paths = network.paths
         lengths = network.lengths
-        for band in network.getBands():
-            for idp, path in enumerate(paths[c.src, c.dst][:n_paths]):
+        analyzed_bands = bands if bands is not None else network.getBands()
+        for band in analyzed_bands:
+            for idp, path in enumerate(
+                paths[c.src, c.dst][: min(n_paths, len(paths[c.src, c.dst]))]
+            ):
                 linksOfPath: List[Link] = [
                     network.links[f"{src}-{dst}"] for src, dst in pairwise(path)
                 ]

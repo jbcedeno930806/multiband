@@ -84,36 +84,36 @@ class RMSA_ENV(BASE_ENV):
     ) -> Tuple[AllocationResult, Connection]:
         lengths = network.lengths
         if action == self.n_paths * self.j:
-            return AllocationResult.Not_Allocated, c
-        else:
-            # get the route and block
-            idx_path, idx_block = self.decode_action(action)
-            paths = self.simulator.network.paths[c.src, c.dst]
-            selected_path = paths[idx_path]
+            raise ValueError(f"Acción inválida {action}")
 
-            linksOfPath: List[Link] = [
-                network.links[f"{src}-{dst}"] for src, dst in pairwise(selected_path)
-            ]
-            bestModulation = c.bitRate.getBestModulationByBand(
-                linksOfPath, lengths[c.src, c.dst][idx_path], "C"
-            )
-            numberOfSlots = bestModulation["slots"]
-            initial_indices, _lengths = get_available_blocks(
-                numberOfSlots,
-                linksOfPath,
-                "C",
-            )
-            if len(initial_indices) > idx_block:
-                ff_index = initial_indices[idx_block]
-                for link in linksOfPath:
-                    c.addLinkInfo(
-                        link.id,
-                        fromSlot=ff_index,
-                        toSlot=ff_index + numberOfSlots,
-                        band="C",
-                        modulation=bestModulation,
-                    )
-                return AllocationResult.Allocated, c
+        # get the route and block
+        idx_path, idx_block = self.decode_action(action)
+        paths = self.simulator.network.paths[c.src, c.dst]
+        selected_path = paths[idx_path]
+
+        linksOfPath: List[Link] = [
+            network.links[f"{src}-{dst}"] for src, dst in pairwise(selected_path)
+        ]
+        bestModulation = c.bitRate.getBestModulationByBand(
+            linksOfPath, lengths[c.src, c.dst][idx_path], "C"
+        )
+        numberOfSlots = bestModulation["slots"]
+        initial_indices, _lengths = get_available_blocks(
+            numberOfSlots,
+            linksOfPath,
+            "C",
+        )
+        if len(initial_indices) > idx_block:
+            ff_index = initial_indices[idx_block]
+            for link in linksOfPath:
+                c.addLinkInfo(
+                    link.id,
+                    fromSlot=ff_index,
+                    toSlot=ff_index + numberOfSlots,
+                    band="C",
+                    modulation=bestModulation,
+                )
+            return AllocationResult.Allocated, c
         return AllocationResult.Not_Allocated, c
 
     def decode_action(self, act: int) -> tuple[int, int]:

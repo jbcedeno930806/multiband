@@ -137,21 +137,21 @@ class SimpleEvaluator(EventEvaluator):
     def _on_update(self, args):
         self.metrics["steps"] = args["steps"]
         event: Event = args["event"]
-        if self.with_protection:
-            if event.getType() == EventType.Departure:
-                con: Connection = args["connection"]
-                if not con.protected:
-                    self.metrics["blockedEvents"] += 1
-            else:
-                self.metrics["blockedEvents"] += 2
-        else:
-            if event.getType() != EventType.Departure:
-                self.metrics["blockedEvents"] += 1
+        # if self.with_protection:
+        #     if event.getType() == EventType.Departure:
+        #         con: Connection = args["connection"]
+        #         if not con.protected:
+        #             self.metrics["blockedEvents"] += 1
+        #     else:
+        #         self.metrics["blockedEvents"] += 2
+        # else:
+        if event.getType() != EventType.Departure:
+            self.metrics["blockedEvents"] += 1
 
         # return self.metrics
 
     def _on_run_end(self, args):
-        bp = round(self.metrics["blockedEvents"] / self.metrics["steps"], 4)
+        bp = round(self.metrics["blockedEvents"] / self.metrics["steps"], 7)
         print(
             "Total blocked events: {} for a BP={}".format(
                 self.metrics["blockedEvents"], bp

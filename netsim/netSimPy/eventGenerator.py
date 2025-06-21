@@ -52,6 +52,8 @@ class EventsGenerator:
         )
 
     def appendEvent(self, event: Event):
+        if event in self.__events:
+            return
         inserted = False
         for i, ev in enumerate(self.__events):
             time = event.time
