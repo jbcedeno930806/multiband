@@ -35,7 +35,6 @@ class S_RMSA_ENV_BEST(S_BASE_ENV):
         self.simulator = simulator
         numberOfNodes = self.simulator.network.getNodesCount()
         self.allDemands = [1, 2, 3, 4, 5, 6, 8, 9, 11, 15, 18, 22, 44]
-        self.allDemands = [0, 0, 1, 0, 0, 0, 0]
         self.__shape = (
             2 * numberOfNodes + self.n_paths * 344 + self.n_paths * len(self.allDemands)
         )
@@ -44,7 +43,6 @@ class S_RMSA_ENV_BEST(S_BASE_ENV):
         self.action_space = gym.spaces.Discrete(self.action_space_len)
 
         super().__init__(simulator, episode_length, allocator)
-        self.allDemands = [1, 2, 3, 4, 5, 6, 8, 9, 11, 15, 18, 22, 44]
         self.sap_allocator = sap_ff(self.n_paths, ["C"])
 
     def _state231243123(self, connection: Connection):

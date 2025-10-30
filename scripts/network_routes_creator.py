@@ -12,10 +12,10 @@ class WeightType(enum.Enum):
 
 
 spaces = 3
-topology = "nsfnet"
+topology = "arpanet"
 routes_output_name = "routes"
 network_output_name = "network"
-output_dir = f"./scripts/results_5routes/{topology}/"
+output_dir = f"./scripts/results/{topology}/"
 Path(output_dir).mkdir(parents=True, exist_ok=True)
 
 bands_info = {"C": 344, "L": 480, "S": 760, "E": 1136}
@@ -23,7 +23,7 @@ bands_info = {"C": 344, "L": 480, "S": 760, "E": 1136}
 
 def main():
     G = nx.Graph()
-    network_filename = "./scripts/topologies-txt/nsfnet_chen.txt"
+    network_filename = "./scripts/topologies-txt/BDM_ARPANet.txt"
     json_routes = []
     json_id_nodes = []
 

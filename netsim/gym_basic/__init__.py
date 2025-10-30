@@ -23,11 +23,6 @@ register(
 )
 
 register(
-    id="S_RMSA_ENV-v0",
-    entry_point="netsim.gym_basic.envs:S_RMSA_ENV",
-)
-
-register(
     id="S_RMSA_ENV_BEST-v0",
     entry_point="netsim.gym_basic.envs:S_RMSA_ENV_BEST",
 )

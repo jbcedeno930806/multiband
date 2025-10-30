@@ -12,7 +12,7 @@ bitrateJSON = {}
 bitrates = ["10", "40", "100", "400", "1000"]
 # bands = ["C", "L", "S", "E"]
 bands = ["C"]
-mods = ["BPSK", "QPSK", "8-QAM", "16-QAM", "32-QAM", "64-QAM", "256-QAM"]
+mods = ["BPSK", "QPSK", "8-QAM", "16-QAM", "32-QAM", "64-QAM", "128-QAM"]
 spanLength = 100
 
 spanData = {
@@ -23,7 +23,7 @@ spanData = {
         "16-QAM": 17,
         "32-QAM": 8,
         "64-QAM": 4,
-        "256-QAM": 1,
+        "128-QAM": 1,
     },
     "L": {
         "BPSK": 144,
@@ -32,7 +32,7 @@ spanData = {
         "16-QAM": 19,
         "32-QAM": 9,
         "64-QAM": 5,
-        "256-QAM": 1,
+        "128-QAM": 1,
     },
     "S": {
         "BPSK": 102,
@@ -41,7 +41,7 @@ spanData = {
         "16-QAM": 14,
         "32-QAM": 7,
         "64-QAM": 3,
-        "256-QAM": 0,
+        "128-QAM": 0,
     },
     "E": {
         "BPSK": 31,
@@ -50,7 +50,7 @@ spanData = {
         "16-QAM": 4,
         "32-QAM": 2,
         "64-QAM": 1,
-        "256-QAM": 0,
+        "128-QAM": 0,
     },
 }
 
@@ -61,7 +61,7 @@ bitratePerSlot = {
     "16-QAM": 92,
     "32-QAM": 115,
     "64-QAM": 140,
-    "256-QAM": 186,
+    "128-QAM": 186,
 }
 
 jsonData = {}
