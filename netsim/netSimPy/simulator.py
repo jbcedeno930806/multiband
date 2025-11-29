@@ -25,7 +25,8 @@ class EventSimulator:
                 self.__eventsGenerator.appendEvent(self.event)
             self.steps += 1
             callback and callback.on_update(self.get_public_attributes())
-        callback and callback.on_run_end(self.get_public_attributes())
+        result = callback.on_run_end(self.get_public_attributes()) if callback else None
+        return result
 
     def get_public_attributes(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}

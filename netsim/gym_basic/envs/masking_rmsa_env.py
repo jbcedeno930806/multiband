@@ -22,6 +22,7 @@ class MASKING_RMSA_ENV(RMSA_ENV):
             ],
             None,
         ] = None,
+        use_first_fit_masking=False,
     ):
         super().__init__(simulator, episode_length, j, n_paths, allocator)
         self._mask = None

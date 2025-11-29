@@ -91,8 +91,9 @@ class EventEvaluator(ABC):
         self.results_writer and self.results_writer.write_row(data)
 
     def on_run_end(self, args: Dict[str, Any]):
-        self._on_run_end(args)
+        result = self._on_run_end(args)
         self.results_writer and self.results_writer.close()
+        return result
 
     @abstractmethod
     def _on_update(self, args: Dict[str, Any]) -> Union[Dict[str, Any], None]:
@@ -157,6 +158,7 @@ class SimpleEvaluator(EventEvaluator):
                 self.metrics["blockedEvents"], bp
             )
         )
+        return bp
 
 
 class NetworkEvaluator(EventEvaluator):
@@ -201,7 +203,9 @@ class NetworkEvaluator(EventEvaluator):
         block = self.metrics["blockedEvents"]
         steps = self.metrics["steps"]
         self.results_writer.write_row(self.metrics)
-        print(f"Blocking probability: {round(block/steps, 6)}")
+        bp = round(block / steps, 6)
+        print(f"Blocking probability: {bp}")
+        return bp
 
     def _on_update(self, args):
         event: Event = args["event"]

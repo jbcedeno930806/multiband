@@ -22,7 +22,9 @@ def sap_ff(n_paths=3, bands: Optional[List[str]] = None):
         block = 0
         paths = network.paths
         lengths = network.lengths
-        analyzed_bands = bands if bands is not None else network.getBands()
+        # analyzed_bands = bands if bands is not None else network.getBands()
+        analyzed_bands = ["C"]
+        # print("analyzed_bands", analyzed_bands)
         for band in analyzed_bands:
             for idp, path in enumerate(
                 paths[c.src, c.dst][: min(n_paths, len(paths[c.src, c.dst]))]

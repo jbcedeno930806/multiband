@@ -20,6 +20,7 @@ class Link:
         self.__src = src
         self.__dst = dst
         self.__length = length
+        self.__link_failure: bool = False
 
         # Slots by band:
         self.__slots: Dict[str, list] = {}
@@ -29,13 +30,21 @@ class Link:
             for key in slots:
                 self.__slots[key] = [False] * slots[key]
 
-    def reset(
-        self,
-    ):
+    def set_failure(self, status: bool):
+        self.reset(status)
+        self.__link_failure = status
+
+    def is_in_fail(self):
+        return self.__link_failure
+
+    def reset(self, failure=False):
+        self.__link_failure = failure
         for key in self.__slots:
-            self.__slots[key] = [False] * len(self.__slots[key])
+            self.__slots[key] = [False if not failure else True] * len(self.__slots[key])
 
     def setSlots(self, slotsIndexes: List[int], value: bool, band: str = NO_BAND) -> None:
+        if self.is_in_fail():
+            return
         if value is False:
             for slotIndex in slotsIndexes:
                 self.__slots[band][slotIndex] = False
