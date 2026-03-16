@@ -1,3 +1,0 @@
-#{}
-steps,blockedEvents,attendedByRouteIndex,totalAttendedByBand,totalAttended,attendedByModulation,totalBitRate,bitRateByBand
-2000000,2280,"{0: 204735, 1: 618268, 2: 1174717}","{'C': 43330, 'S': 1427897, 'L': 150391, 'E': 376102}",1997720,"{'8-QAM': 472000, '32-QAM': 8533, 'QPSK': 1076666, '16-QAM': 119699, '64-QAM': 49, 'BPSK': 320773}",618198560,"{'C': 41342620, 'S': 313748750, 'L': 136167970, 'E': 126939220}"
