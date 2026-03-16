@@ -109,7 +109,6 @@ class LogManager:
 
     def live_run(self, msg: str) -> None:
         if not self._is_tty:
-            self.info(msg)
             return
         if not self._live_active:
             self._run_ts = now_ts()
@@ -120,7 +119,6 @@ class LogManager:
 
     def progress(self, msg: str) -> None:
         if not self._is_tty:
-            self.info(msg)
             return
         self._prog_line = self._format_line("PROG", msg, ts=now_ts())
         self._render_live()
