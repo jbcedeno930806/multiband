@@ -8,6 +8,7 @@ Ajustes rapidos:
 - PROGRESS_EVERY: frecuencia de logs de progreso (0.05 = 5%).
 """
 import math
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,7 +29,7 @@ from netsim.netSimPy.common.evaluators import NetworkEvaluator
 # -----------------------------
 # Configuracion
 # -----------------------------
-N_EVALUATIONS = 2_000
+N_EVALUATIONS = 10_000
 M_LAMBDA = 200_000
 PROGRESS_EVERY = 0.05
 
@@ -58,8 +59,75 @@ def now_ts() -> str:
     return time.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def log(msg: str) -> None:
-    print(f"[{now_ts()}] {msg}", flush=True)
+class LogManager:
+    def __init__(self) -> None:
+        self._is_tty = sys.stdout.isatty()
+        self._live_active = False
+        self._run_line = ""
+        self._prog_line = ""
+        self._run_ts = ""
+
+    def _format_line(self, level: str, msg: str, ts: Optional[str] = None) -> str:
+        stamp = ts if ts is not None else now_ts()
+        return f"[{stamp}] {level:<5} | {msg}"
+
+    def _emit(self, level: str, msg: str) -> None:
+        if self._live_active and self._is_tty:
+            self._clear_live_area()
+        print(self._format_line(level, msg), flush=True)
+
+    def info(self, msg: str) -> None:
+        self._emit("INFO", msg)
+
+    def warn(self, msg: str) -> None:
+        self._emit("WARN", msg)
+
+    def _render_live(self) -> None:
+        if not self._is_tty:
+            return
+        if self._live_active:
+            # move cursor up to the RUN line
+            sys.stdout.write("\x1b[1A\r\x1b[2K")
+        else:
+            self._live_active = True
+        sys.stdout.write(self._run_line + "\n")
+        sys.stdout.write("\r\x1b[2K" + self._prog_line)
+        sys.stdout.flush()
+
+    def _clear_live_area(self) -> None:
+        if not self._is_tty or not self._live_active:
+            return
+        # clear PROG line
+        sys.stdout.write("\r\x1b[2K")
+        # clear RUN line
+        sys.stdout.write("\x1b[1A\r\x1b[2K")
+        sys.stdout.flush()
+        self._live_active = False
+        self._run_line = ""
+        self._prog_line = ""
+        self._run_ts = ""
+
+    def live_run(self, msg: str) -> None:
+        if not self._is_tty:
+            self.info(msg)
+            return
+        if not self._live_active:
+            self._run_ts = now_ts()
+        self._run_line = self._format_line("INFO", msg, ts=self._run_ts)
+        if not self._prog_line:
+            self._prog_line = self._format_line("PROG", "", ts=now_ts())
+        self._render_live()
+
+    def progress(self, msg: str) -> None:
+        if not self._is_tty:
+            self.info(msg)
+            return
+        self._prog_line = self._format_line("PROG", msg, ts=now_ts())
+        self._render_live()
+
+    def finalize_progress(self) -> None:
+        if self._live_active and self._is_tty:
+            self._clear_live_area()
 
 
 def fmt_seconds(seconds: float) -> str:
@@ -70,6 +138,20 @@ def fmt_seconds(seconds: float) -> str:
         return f"{minutes:.1f}m"
     hours = minutes / 60.0
     return f"{hours:.2f}h"
+
+
+def progress_bar(ratio: float, width: int = 20) -> str:
+    ratio = max(0.0, min(1.0, ratio))
+    filled = int(ratio * width)
+    return "[" + "#" * filled + "-" * (width - filled) + "]"
+
+
+def section_line(title: str, width: int = 72) -> str:
+    label = f" {title} "
+    if len(label) >= width:
+        return label
+    side = (width - len(label)) // 2
+    return "-" * side + label + "-" * (width - len(label) - side)
 
 
 def filter_bands(order: List[str], available: List[str]) -> List[str]:
@@ -102,6 +184,7 @@ class ProgressNetworkEvaluator(NetworkEvaluator):
         bands: List[str],
         progress_every: float,
         log_fn: Callable[[str], None],
+        context: str,
         header: Optional[Dict[str, str]] = None,
     ):
         super().__init__(name=name, bands=bands, header=header, should_save=True)
@@ -109,6 +192,7 @@ class ProgressNetworkEvaluator(NetworkEvaluator):
         self.progress_every = progress_every
         self._next_progress = progress_every
         self._log = log_fn
+        self._context = context
         self._start = time.perf_counter()
 
     def _on_update(self, args):
@@ -121,17 +205,25 @@ class ProgressNetworkEvaluator(NetworkEvaluator):
             bp = self.metrics["blockedEvents"] / steps if steps else 0.0
             elapsed = time.perf_counter() - self._start
             eta = elapsed * (self.total_steps - steps) / steps if steps else 0.0
+            bar = progress_bar(ratio)
             self._log(
-                f"  Progreso {ratio*100:.1f}% | BP~{bp:.6f} | "
-                f"t={fmt_seconds(elapsed)} | ETA~{fmt_seconds(eta)}"
+                f"{self._context} | {bar} {ratio*100:5.1f}% | "
+                f"BP~{bp:.6f} | t={fmt_seconds(elapsed)} | ETA={fmt_seconds(eta)}"
             )
             while self._next_progress <= ratio:
                 self._next_progress += self.progress_every
 
     def _on_run_end(self, args):
-        bp = super()._on_run_end(args)
+        block = self.metrics["blockedEvents"]
+        steps = self.metrics["steps"]
+        if self.results_writer:
+            self.results_writer.write_row(self.metrics)
+        bp = round(block / steps, 6) if steps else 0.0
         elapsed = time.perf_counter() - self._start
-        self._log(f"  Fin simulacion | BP={bp} | t={fmt_seconds(elapsed)}")
+        bar = progress_bar(1.0)
+        self._log(
+            f"{self._context} | {bar} 100.0% | " f"BP={bp} | t={fmt_seconds(elapsed)}"
+        )
         return bp
 
 
@@ -221,7 +313,7 @@ def build_algorithms() -> List[AlgorithmSpec]:
     ]
 
 
-def build_topologies() -> Dict[str, TopologyState]:
+def build_topologies(logs: LogManager) -> Dict[str, TopologyState]:
     root = Path(__file__).resolve().parents[2]
     networks_dir = root / "networks"
     states: Dict[str, TopologyState] = {}
@@ -230,7 +322,7 @@ def build_topologies() -> Dict[str, TopologyState]:
         name = topo["name"]
         traffic = TRAFFIC_BY_TOPOLOGY.get(name, [])
         if not traffic:
-            log(f"Omitiendo {name}: no hay trafico definido.")
+            logs.warn(f"Omitiendo {name}: no hay trafico definido.")
             continue
 
         topo_dir = networks_dir / topo["dir"]
@@ -253,7 +345,7 @@ def build_topologies() -> Dict[str, TopologyState]:
             mean_bitrate=mean_bitrate,
             traffic=traffic,
         )
-        log(
+        logs.info(
             f"Topologia {name} | bandas={available_bands} | "
             f"mean_len={mean_length} | mean_br={mean_bitrate:.1f}"
         )
@@ -261,11 +353,12 @@ def build_topologies() -> Dict[str, TopologyState]:
 
 
 def main() -> None:
-    log("Inicializando simulaciones ONDM unificadas (1 ruta).")
-    topologies = build_topologies()
+    logs = LogManager()
+    logs.info("Inicio de simulaciones ONDM unificadas (1 ruta).")
+    topologies = build_topologies(logs)
     algorithms = build_algorithms()
     if not topologies:
-        log("No hay topologias activas. Revisar TRAFFIC_BY_TOPOLOGY.")
+        logs.info("No hay topologias activas. Revisar TRAFFIC_BY_TOPOLOGY.")
         return
 
     tasks: List[Tuple[TopologyState, AlgorithmSpec, int]] = []
@@ -276,18 +369,22 @@ def main() -> None:
 
     total_tasks = len(tasks)
     if total_tasks == 0:
-        log("No hay simulaciones para ejecutar.")
+        logs.info("No hay simulaciones para ejecutar.")
         return
 
     base_results = Path(__file__).resolve().parent / "results"
     total_start = time.perf_counter()
-    log(f"Total de simulaciones: {total_tasks}")
+    logs.info(f"Plan: {total_tasks} simulaciones en cola.")
 
+    current_topology = None
     for idx, (topo, algo, traffic) in enumerate(tasks, start=1):
+        if topo.name != current_topology:
+            logs.info(section_line(f"TOPOLOGY {topo.name}"))
+            current_topology = topo.name
         global_pct = (idx - 1) / total_tasks * 100
-        log(
-            f"[Global {idx}/{total_tasks} | {global_pct:.1f}%] "
-            f"Iniciando {topo.name} | {algo.label} | lambda={traffic}"
+        logs.live_run(
+            f"RUNNING  | {topo.name} | {algo.key} | "
+            f"global={idx}/{total_tasks} ({global_pct:.1f}%)"
         )
 
         allocator = algo.factory(topo)
@@ -311,40 +408,33 @@ def main() -> None:
                 "lambda": str(traffic),
                 "n_evaluations": str(N_EVALUATIONS),
             }
+            context = f"{topo.name} | {algo.key} | lambda={traffic}"
             evaluator = ProgressNetworkEvaluator(
                 name=run_name,
                 total_steps=N_EVALUATIONS,
                 bands=topo.available_bands,
                 progress_every=PROGRESS_EVERY,
-                log_fn=log,
+                log_fn=logs.progress,
+                context=context,
                 header=header,
             )
 
             run_start = time.perf_counter()
-            simulator.run(N_EVALUATIONS, evaluator)
+            bp = simulator.run(N_EVALUATIONS, evaluator)
             run_elapsed = time.perf_counter() - run_start
+            logs.finalize_progress()
 
-            global_done = idx / total_tasks * 100
-            remaining = total_tasks - idx
-            next_task = tasks[idx] if idx < total_tasks else None
-            if next_task:
-                next_topo, next_algo, next_lambda = next_task
-                next_msg = f"Siguiente: {next_topo.name} | {next_algo.label} | lambda={next_lambda}"
-            else:
-                next_msg = "Siguiente: (ninguna, todas completadas)"
-            log(
-                f"Completada {topo.name} | {algo.label} | lambda={traffic} "
-                f"t={fmt_seconds(run_elapsed)} | "
-                f"Global {idx}/{total_tasks} ({global_done:.1f}%) | "
-                f"Pendientes: {remaining} | {next_msg}"
+            logs.info(
+                f"DONE | {topo.name} | {algo.key} | lambda={traffic} | "
+                f"total_time={fmt_seconds(run_elapsed)} | BP={bp}"
             )
         finally:
             if simulator is not None:
                 simulator.reset()
 
     total_elapsed = time.perf_counter() - total_start
-    log(f"Fin. Tiempo total: {fmt_seconds(total_elapsed)}")
-    log(f"Resultados en: {base_results}")
+    logs.info(f"Fin. Tiempo total: {fmt_seconds(total_elapsed)}")
+    logs.info(f"Resultados en: {base_results}")
 
 
 if __name__ == "__main__":
