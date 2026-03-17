@@ -3,15 +3,15 @@ import json
 from pathlib import Path
 
 
-topology = "nsfnet"
-output_filename = "bitrates_c_bands"
+topology = "arpanet"
+output_filename = "bitrates_4_bands"
 output_dir = f"./scripts/results/{topology}/"
 Path(output_dir).mkdir(parents=True, exist_ok=True)
 
 bitrateJSON = {}
-bitrates = ["10", "40", "100", "400", "1000"]
-# bands = ["C", "L", "S", "E"]
-bands = ["C"]
+# bitrates = ["10", "40", "100", "400", "1000"]
+bitrates = ["100", "400", "1000"]
+bands = ["C", "L", "S", "E"]
 mods = ["BPSK", "QPSK", "8-QAM", "16-QAM", "32-QAM", "64-QAM", "128-QAM"]
 spanLength = 100
 

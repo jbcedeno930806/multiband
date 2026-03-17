@@ -33,22 +33,23 @@ N_EVALUATIONS = 10_000
 M_LAMBDA = 200_000
 PROGRESS_EVERY = 0.05
 
-DEFAULT_TRAFFIC = [50_000, 100_000, 150_000, 200_000, 250_000, 300_000, 350_000, 400_000]
+DEFAULT_TRAFFIC = [i * 50_000 for i in range(1, 17)]
+
 
 TRAFFIC_BY_TOPOLOGY = {
     "NSFNet": DEFAULT_TRAFFIC,
-    # "UKNet": DEFAULT_TRAFFIC,
-    # "Eurocore": DEFAULT_TRAFFIC,
-    # "USNet": DEFAULT_TRAFFIC,
-    # "EONet": DEFAULT_TRAFFIC,
+    "UKNet": DEFAULT_TRAFFIC,
+    "Eurocore": DEFAULT_TRAFFIC,
+    "USNet": DEFAULT_TRAFFIC,
+    "EONet": DEFAULT_TRAFFIC,
 }
 
 TOPOLOGIES = [
     {"name": "NSFNet", "dir": "nsfnet", "bitrate": "bitrates_4_bands.json"},
-    # {"name": "UKNet", "dir": "uknet", "bitrate": "bitrates_c_bands.json"},
-    # {"name": "Eurocore", "dir": "eurocore", "bitrate": "bitrates_c_bands.json"},
-    # {"name": "USNet", "dir": "usnet", "bitrate": "bitrates_c_bands.json"},
-    # {"name": "EONet", "dir": "eon", "bitrate": "bitrates_c_bands.json"},
+    {"name": "UKNet", "dir": "uknet", "bitrate": "bitrates_4_bands.json"},
+    {"name": "Eurocore", "dir": "eurocore", "bitrate": "bitrates_4_bands.json"},
+    {"name": "USNet", "dir": "usnet", "bitrate": "bitrates_4_bands.json"},
+    {"name": "EONet", "dir": "eon", "bitrate": "bitrates_4_bands.json"},
 ]
 
 
