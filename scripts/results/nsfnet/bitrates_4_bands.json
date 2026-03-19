@@ -1,248 +1,4 @@
 {
-    "10": {
-        "C": {
-            "BPSK": {
-                "reach": 13000,
-                "slots": 1
-            },
-            "QPSK": {
-                "reach": 6500,
-                "slots": 1
-            },
-            "8-QAM": {
-                "reach": 3500,
-                "slots": 1
-            },
-            "16-QAM": {
-                "reach": 1700,
-                "slots": 1
-            },
-            "32-QAM": {
-                "reach": 800,
-                "slots": 1
-            },
-            "64-QAM": {
-                "reach": 400,
-                "slots": 1
-            },
-            "256-QAM": {
-                "reach": 100,
-                "slots": 1
-            }
-        },
-        "L": {
-            "BPSK": {
-                "reach": 14400,
-                "slots": 1
-            },
-            "QPSK": {
-                "reach": 7200,
-                "slots": 1
-            },
-            "8-QAM": {
-                "reach": 3900,
-                "slots": 1
-            },
-            "16-QAM": {
-                "reach": 1900,
-                "slots": 1
-            },
-            "32-QAM": {
-                "reach": 900,
-                "slots": 1
-            },
-            "64-QAM": {
-                "reach": 500,
-                "slots": 1
-            },
-            "256-QAM": {
-                "reach": 100,
-                "slots": 1
-            }
-        },
-        "S": {
-            "BPSK": {
-                "reach": 10200,
-                "slots": 1
-            },
-            "QPSK": {
-                "reach": 5100,
-                "slots": 1
-            },
-            "8-QAM": {
-                "reach": 2900,
-                "slots": 1
-            },
-            "16-QAM": {
-                "reach": 1400,
-                "slots": 1
-            },
-            "32-QAM": {
-                "reach": 700,
-                "slots": 1
-            },
-            "64-QAM": {
-                "reach": 300,
-                "slots": 1
-            },
-            "256-QAM": {
-                "reach": 0,
-                "slots": 1
-            }
-        },
-        "E": {
-            "BPSK": {
-                "reach": 3100,
-                "slots": 1
-            },
-            "QPSK": {
-                "reach": 1500,
-                "slots": 1
-            },
-            "8-QAM": {
-                "reach": 900,
-                "slots": 1
-            },
-            "16-QAM": {
-                "reach": 400,
-                "slots": 1
-            },
-            "32-QAM": {
-                "reach": 200,
-                "slots": 1
-            },
-            "64-QAM": {
-                "reach": 100,
-                "slots": 1
-            },
-            "256-QAM": {
-                "reach": 0,
-                "slots": 1
-            }
-        }
-    },
-    "40": {
-        "C": {
-            "BPSK": {
-                "reach": 13000,
-                "slots": 2
-            },
-            "QPSK": {
-                "reach": 6500,
-                "slots": 1
-            },
-            "8-QAM": {
-                "reach": 3500,
-                "slots": 1
-            },
-            "16-QAM": {
-                "reach": 1700,
-                "slots": 1
-            },
-            "32-QAM": {
-                "reach": 800,
-                "slots": 1
-            },
-            "64-QAM": {
-                "reach": 400,
-                "slots": 1
-            },
-            "256-QAM": {
-                "reach": 100,
-                "slots": 1
-            }
-        },
-        "L": {
-            "BPSK": {
-                "reach": 14400,
-                "slots": 2
-            },
-            "QPSK": {
-                "reach": 7200,
-                "slots": 1
-            },
-            "8-QAM": {
-                "reach": 3900,
-                "slots": 1
-            },
-            "16-QAM": {
-                "reach": 1900,
-                "slots": 1
-            },
-            "32-QAM": {
-                "reach": 900,
-                "slots": 1
-            },
-            "64-QAM": {
-                "reach": 500,
-                "slots": 1
-            },
-            "256-QAM": {
-                "reach": 100,
-                "slots": 1
-            }
-        },
-        "S": {
-            "BPSK": {
-                "reach": 10200,
-                "slots": 2
-            },
-            "QPSK": {
-                "reach": 5100,
-                "slots": 1
-            },
-            "8-QAM": {
-                "reach": 2900,
-                "slots": 1
-            },
-            "16-QAM": {
-                "reach": 1400,
-                "slots": 1
-            },
-            "32-QAM": {
-                "reach": 700,
-                "slots": 1
-            },
-            "64-QAM": {
-                "reach": 300,
-                "slots": 1
-            },
-            "256-QAM": {
-                "reach": 0,
-                "slots": 1
-            }
-        },
-        "E": {
-            "BPSK": {
-                "reach": 3100,
-                "slots": 2
-            },
-            "QPSK": {
-                "reach": 1500,
-                "slots": 1
-            },
-            "8-QAM": {
-                "reach": 900,
-                "slots": 1
-            },
-            "16-QAM": {
-                "reach": 400,
-                "slots": 1
-            },
-            "32-QAM": {
-                "reach": 200,
-                "slots": 1
-            },
-            "64-QAM": {
-                "reach": 100,
-                "slots": 1
-            },
-            "256-QAM": {
-                "reach": 0,
-                "slots": 1
-            }
-        }
-    },
     "100": {
         "C": {
             "BPSK": {
@@ -269,7 +25,7 @@
                 "reach": 400,
                 "slots": 1
             },
-            "256-QAM": {
+            "128-QAM": {
                 "reach": 100,
                 "slots": 1
             }
@@ -299,7 +55,7 @@
                 "reach": 500,
                 "slots": 1
             },
-            "256-QAM": {
+            "128-QAM": {
                 "reach": 100,
                 "slots": 1
             }
@@ -329,7 +85,7 @@
                 "reach": 300,
                 "slots": 1
             },
-            "256-QAM": {
+            "128-QAM": {
                 "reach": 0,
                 "slots": 1
             }
@@ -359,7 +115,7 @@
                 "reach": 100,
                 "slots": 1
             },
-            "256-QAM": {
+            "128-QAM": {
                 "reach": 0,
                 "slots": 1
             }
@@ -391,7 +147,7 @@
                 "reach": 400,
                 "slots": 3
             },
-            "256-QAM": {
+            "128-QAM": {
                 "reach": 100,
                 "slots": 3
             }
@@ -421,7 +177,7 @@
                 "reach": 500,
                 "slots": 3
             },
-            "256-QAM": {
+            "128-QAM": {
                 "reach": 100,
                 "slots": 3
             }
@@ -451,7 +207,7 @@
                 "reach": 300,
                 "slots": 3
             },
-            "256-QAM": {
+            "128-QAM": {
                 "reach": 0,
                 "slots": 3
             }
@@ -481,7 +237,7 @@
                 "reach": 100,
                 "slots": 3
             },
-            "256-QAM": {
+            "128-QAM": {
                 "reach": 0,
                 "slots": 3
             }
@@ -513,7 +269,7 @@
                 "reach": 400,
                 "slots": 8
             },
-            "256-QAM": {
+            "128-QAM": {
                 "reach": 100,
                 "slots": 6
             }
@@ -543,7 +299,7 @@
                 "reach": 500,
                 "slots": 8
             },
-            "256-QAM": {
+            "128-QAM": {
                 "reach": 100,
                 "slots": 6
             }
@@ -573,7 +329,7 @@
                 "reach": 300,
                 "slots": 8
             },
-            "256-QAM": {
+            "128-QAM": {
                 "reach": 0,
                 "slots": 6
             }
@@ -603,7 +359,7 @@
                 "reach": 100,
                 "slots": 8
             },
-            "256-QAM": {
+            "128-QAM": {
                 "reach": 0,
                 "slots": 6
             }

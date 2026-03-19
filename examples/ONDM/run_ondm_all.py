@@ -29,7 +29,7 @@ from netsim.netSimPy.common.evaluators import NetworkEvaluator
 # -----------------------------
 # Configuracion
 # -----------------------------
-N_EVALUATIONS = 10_000
+N_EVALUATIONS = 1_000
 M_LAMBDA = 200_000
 PROGRESS_EVERY = 0.05
 
@@ -42,6 +42,7 @@ TRAFFIC_BY_TOPOLOGY = {
     "Eurocore": DEFAULT_TRAFFIC,
     "USNet": DEFAULT_TRAFFIC,
     "EONet": DEFAULT_TRAFFIC,
+    "GermanNet": DEFAULT_TRAFFIC,
 }
 
 TOPOLOGIES = [
@@ -50,6 +51,7 @@ TOPOLOGIES = [
     {"name": "Eurocore", "dir": "eurocore", "bitrate": "bitrates_4_bands.json"},
     {"name": "USNet", "dir": "usnet", "bitrate": "bitrates_4_bands.json"},
     {"name": "EONet", "dir": "eon", "bitrate": "bitrates_4_bands.json"},
+    {"name": "GermanNet", "dir": "german", "bitrate": "bitrates_4_bands.json"},
 ]
 
 
