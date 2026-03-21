@@ -21,7 +21,7 @@ from netsim.netSimPy.common.evaluators import NetworkEvaluator
 # -----------------------------
 # Configuracion
 # -----------------------------
-N_EVALUATIONS = 1_000
+N_EVALUATIONS = 2_000_000
 M_LAMBDA = 10_000
 PROGRESS_EVERY = 0.05
 

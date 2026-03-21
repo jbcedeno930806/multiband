@@ -8,6 +8,7 @@ Ajustes rapidos:
 - PROGRESS_EVERY: frecuencia de logs de progreso (0.05 = 5%).
 """
 import math
+import shutil
 import sys
 import time
 from dataclasses import dataclass
@@ -29,7 +30,7 @@ from netsim.netSimPy.common.evaluators import NetworkEvaluator
 # -----------------------------
 # Configuracion
 # -----------------------------
-N_EVALUATIONS = 1_000
+N_EVALUATIONS = 2_000_000
 M_LAMBDA = 200_000
 PROGRESS_EVERY = 0.05
 
@@ -66,18 +67,26 @@ class LogManager:
     def __init__(self) -> None:
         self._is_tty = sys.stdout.isatty()
         self._live_active = False
-        self._run_line = ""
-        self._prog_line = ""
-        self._run_ts = ""
+        self._live_len = 0
+        self._live_prefix = ""
 
     def _format_line(self, level: str, msg: str, ts: Optional[str] = None) -> str:
         stamp = ts if ts is not None else now_ts()
         return f"[{stamp}] {level:<5} | {msg}"
 
+    def _fit_line(self, line: str) -> str:
+        if not self._is_tty:
+            return line
+        width = shutil.get_terminal_size((80, 20)).columns
+        if len(line) <= width:
+            return line
+        return line[: max(0, width - 3)] + "..."
+
     def _emit(self, level: str, msg: str) -> None:
         if self._live_active and self._is_tty:
-            self._clear_live_area()
-        print(self._format_line(level, msg), flush=True)
+            self.live_end()
+        line = self._format_line(level, msg)
+        print(self._fit_line(line), flush=True)
 
     def info(self, msg: str) -> None:
         self._emit("INFO", msg)
@@ -85,50 +94,38 @@ class LogManager:
     def warn(self, msg: str) -> None:
         self._emit("WARN", msg)
 
-    def _render_live(self) -> None:
+    def _render_live(self, line: str) -> None:
         if not self._is_tty:
             return
-        if self._live_active:
-            # move cursor up to the RUN line
-            sys.stdout.write("\x1b[1A\r\x1b[2K")
+        fitted = self._fit_line(line)
+        padding = max(0, self._live_len - len(fitted))
+        sys.stdout.write("\r" + fitted + (" " * padding))
+        sys.stdout.flush()
+        self._live_active = True
+        self._live_len = len(fitted)
+
+    def live_start(self, msg: str) -> None:
+        if not self._is_tty:
+            return
+        self._live_prefix = self._format_line("INFO", msg)
+        self._render_live(self._live_prefix)
+
+    def live_update(self, msg: str) -> None:
+        if not self._is_tty:
+            return
+        if self._live_prefix:
+            line = f"{self._live_prefix} | {msg}"
         else:
-            self._live_active = True
-        sys.stdout.write(self._run_line + "\n")
-        sys.stdout.write("\r\x1b[2K" + self._prog_line)
-        sys.stdout.flush()
+            line = self._format_line("PROG", msg)
+        self._render_live(line)
 
-    def _clear_live_area(self) -> None:
-        if not self._is_tty or not self._live_active:
-            return
-        # clear PROG line
-        sys.stdout.write("\r\x1b[2K")
-        # clear RUN line
-        sys.stdout.write("\x1b[1A\r\x1b[2K")
-        sys.stdout.flush()
-        self._live_active = False
-        self._run_line = ""
-        self._prog_line = ""
-        self._run_ts = ""
-
-    def live_run(self, msg: str) -> None:
-        if not self._is_tty:
-            return
-        if not self._live_active:
-            self._run_ts = now_ts()
-        self._run_line = self._format_line("INFO", msg, ts=self._run_ts)
-        if not self._prog_line:
-            self._prog_line = self._format_line("PROG", "", ts=now_ts())
-        self._render_live()
-
-    def progress(self, msg: str) -> None:
-        if not self._is_tty:
-            return
-        self._prog_line = self._format_line("PROG", msg, ts=now_ts())
-        self._render_live()
-
-    def finalize_progress(self) -> None:
+    def live_end(self) -> None:
         if self._live_active and self._is_tty:
-            self._clear_live_area()
+            sys.stdout.write("\r" + (" " * self._live_len) + "\r")
+            sys.stdout.flush()
+            self._live_active = False
+            self._live_len = 0
+            self._live_prefix = ""
 
 
 def fmt_seconds(seconds: float) -> str:
@@ -185,7 +182,6 @@ class ProgressNetworkEvaluator(NetworkEvaluator):
         bands: List[str],
         progress_every: float,
         log_fn: Callable[[str], None],
-        context: str,
         header: Optional[Dict[str, str]] = None,
     ):
         super().__init__(name=name, bands=bands, header=header, should_save=True)
@@ -193,7 +189,6 @@ class ProgressNetworkEvaluator(NetworkEvaluator):
         self.progress_every = progress_every
         self._next_progress = progress_every
         self._log = log_fn
-        self._context = context
         self._start = time.perf_counter()
 
     def _on_update(self, args):
@@ -208,7 +203,7 @@ class ProgressNetworkEvaluator(NetworkEvaluator):
             eta = elapsed * (self.total_steps - steps) / steps if steps else 0.0
             bar = progress_bar(ratio)
             self._log(
-                f"{self._context} | {bar} {ratio*100:5.1f}% | "
+                f"{bar} {ratio*100:5.1f}% | "
                 f"BP~{bp:.6f} | t={fmt_seconds(elapsed)} | ETA={fmt_seconds(eta)}"
             )
             while self._next_progress <= ratio:
@@ -222,9 +217,7 @@ class ProgressNetworkEvaluator(NetworkEvaluator):
         bp = round(block / steps, 6) if steps else 0.0
         elapsed = time.perf_counter() - self._start
         bar = progress_bar(1.0)
-        self._log(
-            f"{self._context} | {bar} 100.0% | " f"BP={bp} | t={fmt_seconds(elapsed)}"
-        )
+        self._log(f"{bar} 100.0% | BP={bp} | t={fmt_seconds(elapsed)}")
         return bp
 
 
@@ -383,7 +376,7 @@ def main() -> None:
             logs.info(section_line(f"TOPOLOGY {topo.name}"))
             current_topology = topo.name
         global_pct = (idx - 1) / total_tasks * 100
-        logs.live_run(
+        logs.live_start(
             f"RUNNING  | {topo.name} | {algo.key} | "
             f"global={idx}/{total_tasks} ({global_pct:.1f}%)"
         )
@@ -409,21 +402,19 @@ def main() -> None:
                 "lambda": str(traffic),
                 "n_evaluations": str(N_EVALUATIONS),
             }
-            context = f"{topo.name} | {algo.key} | lambda={traffic}"
             evaluator = ProgressNetworkEvaluator(
                 name=run_name,
                 total_steps=N_EVALUATIONS,
                 bands=topo.available_bands,
                 progress_every=PROGRESS_EVERY,
-                log_fn=logs.progress,
-                context=context,
+                log_fn=logs.live_update,
                 header=header,
             )
 
             run_start = time.perf_counter()
             bp = simulator.run(N_EVALUATIONS, evaluator)
             run_elapsed = time.perf_counter() - run_start
-            logs.finalize_progress()
+            logs.live_end()
 
             logs.info(
                 f"DONE | {topo.name} | {algo.key} | lambda={traffic} | "
