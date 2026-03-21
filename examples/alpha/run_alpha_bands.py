@@ -23,7 +23,7 @@ from netsim.netSimPy.common.evaluators import NetworkEvaluator
 # -----------------------------
 N_EVALUATIONS = 2_000_000
 M_LAMBDA = 10_000
-PROGRESS_EVERY = 0.05
+PROGRESS_EVERY = 0.00005
 
 AVAILABLE_BANDS = ["C", "S", "L", "E"]
 TRAFFICS = [50_000, 75_000, 100_000, 125_000, 150_000, 175_000, 200_000]

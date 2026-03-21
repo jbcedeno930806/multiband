@@ -32,7 +32,7 @@ from netsim.netSimPy.common.evaluators import NetworkEvaluator
 # -----------------------------
 N_EVALUATIONS = 2_000_000
 M_LAMBDA = 200_000
-PROGRESS_EVERY = 0.05
+PROGRESS_EVERY = 0.00005
 
 DEFAULT_TRAFFIC = [i * 50_000 for i in range(1, 17)]
 
