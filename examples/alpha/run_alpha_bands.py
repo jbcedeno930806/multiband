@@ -27,7 +27,9 @@ PROGRESS_EVERY = 0.00005
 
 AVAILABLE_BANDS = ["C", "S", "L", "E"]
 TRAFFICS = [50_000, 75_000, 100_000, 125_000, 150_000, 175_000, 200_000]
-ALPHAS = [i / 10 for i in range(1, 11)]  # 0.1 .. 1.0
+ALPHAS = [i / 10 for i in range(3, 11)]  # 0.3 .. 1.0
+# Reanuda un alpha desde una ejecucion especifica (orden1 + orden2 + trafico), indexada desde 1.
+ALPHA_START_RUNS = {"0.3": 3070}
 
 # Para pruebas rapidas puedes limitar combinaciones:
 MAX_COMBINATIONS = None  # e.g. 10
@@ -197,6 +199,10 @@ def order_label(order: Tuple[str, ...]) -> str:
     return "".join(order)
 
 
+def alpha_start_run(alpha: float) -> int:
+    return ALPHA_START_RUNS.get(f"{alpha:.1f}", 1)
+
+
 def main() -> None:
     logs = LogManager()
     logs.info("Inicio de simulaciones alphaBalancing (NSFNet).")
@@ -205,8 +211,19 @@ def main() -> None:
     if MAX_COMBINATIONS is not None:
         orders = orders[:MAX_COMBINATIONS]
 
-    total_combos = len(ALPHAS) * (len(orders) ** 2)
-    total_runs = total_combos * len(TRAFFICS)
+    order_pairs = list(itertools.product(orders, repeat=2))
+    combos_per_alpha = len(order_pairs)
+    runs_per_alpha = combos_per_alpha * len(TRAFFICS)
+
+    total_combos = 0
+    total_runs = 0
+    for alpha in ALPHAS:
+        start_run = alpha_start_run(alpha)
+        if start_run > runs_per_alpha:
+            continue
+        total_combos += combos_per_alpha - ((start_run - 1) // len(TRAFFICS))
+        total_runs += runs_per_alpha - (start_run - 1)
+
     logs.info(
         f"Plan: alphas={len(ALPHAS)}, ordenes={len(orders)}, "
         f"combos={total_combos}, runs={total_runs}."
@@ -217,66 +234,87 @@ def main() -> None:
     results_dir = Path(__file__).resolve().parent / "results"
 
     run_idx = 0
-    combo_idx = 0
     total_start = time.perf_counter()
 
     for alpha in ALPHAS:
-        logs.info(section_line(f"ALPHA {alpha:.1f}"))
-        for bands1 in orders:
-            for bands2 in orders:
-                combo_idx += 1
-                allocator = alphaBalancing(1, [alpha, 1], [list(bands1), list(bands2)])
-                network = Network(
-                    networkFileName=str(networks_dir / "network.json"),
-                    pathsFileName=str(networks_dir / "routes.json"),
-                    bitrateFilename=str(networks_dir / "bitrates_4_bands.json"),
+        alpha_id = f"{alpha:.1f}"
+        start_run = alpha_start_run(alpha)
+        if start_run > runs_per_alpha:
+            logs.warn(
+                f"ALPHA {alpha_id} omitido: start_run={start_run} excede "
+                f"las {runs_per_alpha} ejecuciones disponibles."
+            )
+            continue
+
+        start_combo_idx = ((start_run - 1) // len(TRAFFICS)) + 1
+        start_traffic_idx = (start_run - 1) % len(TRAFFICS)
+
+        logs.info(section_line(f"ALPHA {alpha_id}"))
+        if start_run > 1:
+            logs.info(
+                f"Reanudando alpha={alpha_id} desde run {start_run}/{runs_per_alpha} "
+                f"(combo {start_combo_idx}/{combos_per_alpha}, trafico #{start_traffic_idx + 1})."
+            )
+
+        for combo_number, (bands1, bands2) in enumerate(order_pairs, start=1):
+            if combo_number < start_combo_idx:
+                continue
+
+            traffic_start = start_traffic_idx if combo_number == start_combo_idx else 0
+            traffic_values = TRAFFICS[traffic_start:]
+
+            allocator = alphaBalancing(1, [alpha, 1], [list(bands1), list(bands2)])
+            network = Network(
+                networkFileName=str(networks_dir / "network.json"),
+                pathsFileName=str(networks_dir / "routes.json"),
+                bitrateFilename=str(networks_dir / "bitrates_4_bands.json"),
+            )
+            generator = EventsGenerator(M_LAMBDA)
+            simulator = NetworkSimulator(
+                eventsGenerator=generator,
+                network=network,
+                allocator=allocator,
+            )
+
+            order1 = order_label(bands1)
+            order2 = order_label(bands2)
+            for traffic in traffic_values:
+                run_idx += 1
+                global_pct = (run_idx - 1) / total_runs * 100
+                logs.live_run(
+                    f"RUN  | a={alpha:.1f} | {order1}-{order2} | "
+                    f"lam={traffic} | global={run_idx}/{total_runs} ({global_pct:.1f}%)"
                 )
-                generator = EventsGenerator(M_LAMBDA)
-                simulator = NetworkSimulator(
-                    eventsGenerator=generator,
-                    network=network,
-                    allocator=allocator,
+
+                out_dir = results_dir / f"alpha_{alpha:.1f}"
+                run_name = str(out_dir / f"{order1}_{order2}_{traffic}")
+                header = {
+                    "alpha": f"{alpha:.1f}",
+                    "order1": order1,
+                    "order2": order2,
+                    "lambda": str(traffic),
+                    "n_evaluations": str(N_EVALUATIONS),
+                }
+                context = f"a={alpha:.1f} | {order1}-{order2} | lam={traffic}"
+                evaluator = ProgressNetworkEvaluator(
+                    name=run_name,
+                    total_steps=N_EVALUATIONS,
+                    bands=AVAILABLE_BANDS,
+                    progress_every=PROGRESS_EVERY,
+                    log_fn=logs.progress,
+                    context=context,
+                    header=header,
                 )
 
-                order1 = order_label(bands1)
-                order2 = order_label(bands2)
-                for traffic in TRAFFICS:
-                    run_idx += 1
-                    global_pct = (run_idx - 1) / total_runs * 100
-                    logs.live_run(
-                        f"RUN  | a={alpha:.1f} | {order1}-{order2} | "
-                        f"lam={traffic} | global={run_idx}/{total_runs} ({global_pct:.1f}%)"
-                    )
+                run_start = time.perf_counter()
+                bp = simulator.run(N_EVALUATIONS, evaluator)
+                run_elapsed = time.perf_counter() - run_start
+                logs.finalize_progress()
 
-                    out_dir = results_dir / f"alpha_{alpha:.1f}"
-                    run_name = str(out_dir / f"{order1}_{order2}_{traffic}")
-                    header = {
-                        "alpha": f"{alpha:.1f}",
-                        "order1": order1,
-                        "order2": order2,
-                        "lambda": str(traffic),
-                        "n_evaluations": str(N_EVALUATIONS),
-                    }
-                    context = f"a={alpha:.1f} | {order1}-{order2} | lam={traffic}"
-                    evaluator = ProgressNetworkEvaluator(
-                        name=run_name,
-                        total_steps=N_EVALUATIONS,
-                        bands=AVAILABLE_BANDS,
-                        progress_every=PROGRESS_EVERY,
-                        log_fn=logs.progress,
-                        context=context,
-                        header=header,
-                    )
-
-                    run_start = time.perf_counter()
-                    bp = simulator.run(N_EVALUATIONS, evaluator)
-                    run_elapsed = time.perf_counter() - run_start
-                    logs.finalize_progress()
-
-                    logs.info(
-                        f"DONE | a={alpha:.1f} | {order1}-{order2} | "
-                        f"lam={traffic} | t={fmt_seconds(run_elapsed)} | BP={bp}"
-                    )
+                logs.info(
+                    f"DONE | a={alpha:.1f} | {order1}-{order2} | "
+                    f"lam={traffic} | t={fmt_seconds(run_elapsed)} | BP={bp}"
+                )
 
     total_elapsed = time.perf_counter() - total_start
     logs.info(f"Fin. Tiempo total: {fmt_seconds(total_elapsed)}")
