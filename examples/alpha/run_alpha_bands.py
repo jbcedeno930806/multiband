@@ -28,8 +28,17 @@ PROGRESS_EVERY = 0.00005
 AVAILABLE_BANDS = ["C", "S", "L", "E"]
 TRAFFICS = [50_000, 75_000, 100_000, 125_000, 150_000, 175_000, 200_000]
 ALPHAS = [i / 10 for i in range(3, 11)]  # 0.3 .. 1.0
-# Reanuda un alpha desde una ejecucion especifica (orden1 + orden2 + trafico), indexada desde 1.
-ALPHA_START_RUNS = {"0.3": 3070}
+# Reanuda desde el punto que correspondia a global=11679/29187
+# del plan anterior. Eso cae en alpha=0.6, run interno 2652
+# (orden1=LSEC, orden2=ECSL, trafico=175000).
+#
+# Para omitir un alpha completo, usa un start_run mayor a runs_per_alpha (4032).
+ALPHA_START_RUNS = {
+    "0.3": 4033,
+    "0.4": 4033,
+    "0.5": 4033,
+    "0.6": 2652,
+}
 
 # Para pruebas rapidas puedes limitar combinaciones:
 MAX_COMBINATIONS = None  # e.g. 10
